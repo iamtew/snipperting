@@ -9,26 +9,79 @@
 <script src="/web/vendor/monaco/loader.js" onerror="document.body.textContent='Monaco missing. Run: just vendor-monaco'"></script>
 <script>
 const vs = "/web/vendor/monaco";
-if (window.require) {
-  require.config({ paths: { vs } });
-  require(["vs/editor/editor.main"], function () {
-    const editor = monaco.editor.create(document.getElementById("m"), {
-      value: "",
-      language: "markdown",
-      automaticLayout: true,
-      wordWrap: "on",
-      theme: "vs"
-    });
-    window.snipSet = function (text, dark) {
-      editor.setValue(text || "");
-      monaco.editor.setTheme(dark ? "vs-dark" : "vs");
-    };
-    window.snipGet = function () {
-      window.chrome.webview.postMessage(JSON.stringify({ t: "save", v: editor.getValue() }));
-    };
-    window.chrome.webview.postMessage(JSON.stringify({ t: "ready" }));
+self.MonacoEnvironment = {
+  getWorkerUrl: function () {
+    const base = location.origin + vs;
+    const body = "self.MonacoEnvironment={baseUrl:'" + base + "/'};importScripts('" + base + "/base/worker/workerMain.js');";
+    return "data:text/javascript;charset=utf-8," + encodeURIComponent(body);
+  }
+};
+require.config({ paths: { vs: vs } });
+require(["vs/editor/editor.main"], function () {
+  const models = Object.create(null);
+  const editor = monaco.editor.create(document.getElementById("m"), {
+    value: "",
+    language: "markdown",
+    automaticLayout: true,
+    wordWrap: "on",
+    theme: "vs"
   });
-}
+
+  function uri(path) {
+    return monaco.Uri.parse("inmemory://s/" + encodeURIComponent(path));
+  }
+
+  function theme(dark) {
+    monaco.editor.setTheme(dark ? "vs-dark" : "vs");
+  }
+
+  window.snipOpen = function (path, text, dark) {
+    theme(dark);
+    let m = models[path];
+    if (!m) {
+      m = monaco.editor.createModel(text || "", "markdown", uri(path));
+      models[path] = m;
+      m.onDidChangeContent(function () {
+        window.chrome.webview.postMessage(JSON.stringify({ t: "dirty", p: path }));
+      });
+    }
+    editor.setModel(m);
+  };
+
+  window.snipSwitch = function (path, dark) {
+    if (dark === true || dark === false) theme(dark);
+    const m = models[path];
+    if (m) editor.setModel(m);
+  };
+
+  window.snipClose = function (path) {
+    const m = models[path];
+    if (!m) return;
+    if (editor.getModel() === m) editor.setModel(null);
+    m.dispose();
+    delete models[path];
+  };
+
+  window.snipSet = function (text, dark) {
+    theme(dark);
+    editor.setValue(text || "");
+  };
+
+  window.snipGet = function () {
+    const m = editor.getModel();
+    let p = "";
+    if (m && m.uri && m.uri.path) {
+      p = decodeURIComponent(m.uri.path.replace(/^\//, ""));
+    }
+    window.chrome.webview.postMessage(JSON.stringify({ t: "save", p: p, v: editor.getValue() }));
+  };
+
+  editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function () {
+    window.snipGet();
+  });
+
+  window.chrome.webview.postMessage(JSON.stringify({ t: "ready" }));
+});
 </script>
 </body>
 </html>

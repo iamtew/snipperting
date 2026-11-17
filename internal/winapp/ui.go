@@ -503,10 +503,14 @@ func openEditor(file string) {
 	p.host = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsClip, 276, 40, 800, 640, 0))
 	p.fillTree()
 	p.chrome = edge.NewChromium()
+	if local := os.Getenv("LOCALAPPDATA"); local != "" {
+		p.chrome.DataPath = filepath.Join(local, "snipperting", "webview")
+	}
 	p.chrome.MessageCallback = func(msg string) {
 		var m struct {
 			T string `json:"t"`
 			V string `json:"v"`
+			P string `json:"p"`
 		}
 		if json.Unmarshal([]byte(msg), &m) != nil {
 			return
@@ -516,15 +520,22 @@ func openEditor(file string) {
 			p.push()
 			return
 		}
-		if m.T == "save" && p.curPath != "" {
-			_ = snippet.Write(p.dataDir, p.curPath, []byte(m.V))
+		if m.T == "save" {
+			rel := m.P
+			if rel == "" {
+				rel = p.curPath
+			}
+			if rel != "" {
+				_ = snippet.Write(p.dataDir, rel, []byte(m.V))
+			}
 		}
 	}
 	if !p.chrome.Embed(p.host) {
-		p.static(p.host, "Monaco missing. Run: just vendor-monaco", 8, 8, 400, 24)
+		p.static(p.host, "WebView2 failed to start.", 8, 8, 400, 24)
 		p.chrome = nil
 		return
 	}
+	p.chrome.Resize()
 	p.chrome.Navigate(fmt.Sprintf("http://127.0.0.1:%d/editor", uiPort))
 	if file != "" {
 		p.loadFile(file)
@@ -603,7 +614,12 @@ func (p *panel) push() {
 		return
 	}
 	b, _ := json.Marshal(p.pending)
-	dark := monacoDark(uiCfg.Get().Theme)
+	dark := monacoDark("system")
+	path, _ := json.Marshal(p.curPath)
+	if p.curPath != "" {
+		p.chrome.Eval(fmt.Sprintf("window.snipOpen&&window.snipOpen(%s,%s,%t)", string(path), string(b), dark))
+		return
+	}
 	p.chrome.Eval(fmt.Sprintf("window.snipSet&&window.snipSet(%s,%t)", string(b), dark))
 }
 

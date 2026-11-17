@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -61,6 +62,19 @@ func TestMonacoFiles(t *testing.T) {
 	s.ServeHTTP(rr, httptest.NewRequest("GET", "/web/secret.txt", nil))
 	if rr.Code == 200 {
 		t.Fatal("web root is too open")
+	}
+}
+
+func TestEditorHTMLHasWorker(t *testing.T) {
+	b, err := os.ReadFile(filepath.Join("..", "..", "web", "editor.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(b, []byte("workerMain.js")) {
+		t.Fatal("editor.html must pin Monaco workers")
+	}
+	if !bytes.Contains(b, []byte("snipOpen")) {
+		t.Fatal("editor.html must expose snipOpen")
 	}
 }
 
