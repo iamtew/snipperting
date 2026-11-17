@@ -7,7 +7,7 @@ goflags := "-ldflags \"-X main.version=" + version + "\""
 default:
     just --list
 
-# run Go tests (parser + HTTP API)
+# run Go tests (parser + health/monaco file server)
 test:
     go test ./...
 
@@ -30,6 +30,10 @@ icon:
 # copy assets/logo.png into docs/ for GitHub Pages (original stays)
 docs-logo:
     Copy-Item -Force assets/logo.png docs/logo.png
+
+# rasterize web/vendor/tabler/*.svg to 16px ico for the tray menu
+tabler:
+    go run ./tools/tabler
 
 # download Monaco into web/vendor/monaco (gitignored; needed for the editor)
 vendor-monaco:

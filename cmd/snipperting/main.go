@@ -22,47 +22,19 @@ func main() {
 	if err != nil {
 		fatal(err)
 	}
-	web := httpapi.FindWebRoot()
-	hooks := httpapi.Hooks{
-		Clipboard: winapp.SetClipboard,
-		Inject:    winapp.Inject,
-		OpenUI: func(kind, file string) {
-			base := fmt.Sprintf("http://127.0.0.1:%d", listenPort)
-			switch kind {
-			case "editor":
-				url := base + "/editor"
-				if file != "" {
-					url += "?path=" + file
-				}
-				winapp.OpenWindow("snipperting editor", url, 1100, 720)
-			case "prefs":
-				winapp.OpenWindow("snipperting preferences", base+"/prefs", 720, 560)
-			case "help":
-				winapp.OpenWindow("snipperting help", base+"/help", 720, 640)
-			case "about":
-				winapp.OpenWindow("snipperting about", base+"/about", 420, 360)
-			}
-		},
-		Exit: func() {
-			os.Exit(0)
-		},
-	}
-	srv := httpapi.New(cfg, web, docs.Manual, version, hooks)
+	srv := httpapi.New(httpapi.FindWebRoot(), version)
 	ln, port, err := httpapi.Listen()
 	if err != nil {
 		fatal(err)
 	}
-	listenPort = port
 	go func() {
 		if err := http.Serve(ln, srv); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 	}()
-	icon := loadIcon()
-	winapp.RunTray(port, icon, cfg, func() { _ = ln.Close() })
+	winapp.StartUI(cfg, port, docs.Manual, version)
+	winapp.RunTray(port, loadIcon(), cfg, func() { _ = ln.Close() })
 }
-
-var listenPort int
 
 func loadIcon() []byte {
 	candidates := []string{}

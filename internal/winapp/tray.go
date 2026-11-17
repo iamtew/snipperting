@@ -1,7 +1,6 @@
 package winapp
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/energye/systray"
@@ -11,17 +10,17 @@ import (
 )
 
 func RunTray(port int, icon []byte, cfg *config.Store, onExit func()) {
-	base := fmt.Sprintf("http://127.0.0.1:%d", port)
+	_ = port
 	systray.Run(func() {
 		if len(icon) > 0 {
 			systray.SetIcon(icon)
 		}
 		systray.SetTitle("snipperting")
 		systray.SetTooltip("snipperting")
-		fillMenu(cfg, base)
+		fillMenu(cfg)
 		openNative := func(m systray.IMenu) {
 			RememberForeground()
-			fillMenu(cfg, base)
+			fillMenu(cfg)
 			_ = m.ShowMenu()
 		}
 		systray.SetOnClick(openNative)
@@ -34,7 +33,7 @@ func RunTray(port int, icon []byte, cfg *config.Store, onExit func()) {
 	})
 }
 
-func fillMenu(cfg *config.Store, base string) {
+func fillMenu(cfg *config.Store) {
 	systray.ResetMenu()
 	dataDir := cfg.Get().DataDir
 	tree, err := snippet.Walk(dataDir)
@@ -42,20 +41,25 @@ func fillMenu(cfg *config.Store, base string) {
 		addNodes(nil, dataDir, tree.Children)
 	}
 	systray.AddSeparator()
-	addOpen(base, "Edit", "/editor", 1100, 720)
-	addOpen(base, "Preferences", "/prefs", 720, 560)
-	addOpen(base, "Help", "/help", 720, 640)
-	addOpen(base, "About", "/about", 420, 360)
+	addOpen("Edit", "editor")
+	addOpen("Preferences", "prefs")
+	addOpen("Help", "help")
+	addOpen("About", "about")
 	quit := systray.AddMenuItem("Exit", "Quit snipperting")
 	quit.Click(func() { systray.Quit() })
 }
 
-func addOpen(base, title, path string, w, h int) {
+func addOpen(title, kind string) {
 	it := systray.AddMenuItem(title, "")
-	url := base + path
-	it.Click(func() {
-		OpenWindow("snipperting "+title, url, w, h)
-	})
+	switch kind {
+	case "editor":
+		it.SetIcon(menuIcon("pencil"))
+	case "prefs":
+		it.SetIcon(menuIcon("settings"))
+	case "help":
+		it.SetIcon(menuIcon("help"))
+	}
+	it.Click(func() { Open(kind, "") })
 }
 
 func addNodes(parent *systray.MenuItem, dataDir string, nodes []snippet.Node) {
@@ -75,9 +79,15 @@ func addNodes(parent *systray.MenuItem, dataDir string, nodes []snippet.Node) {
 			it = parent.AddSubMenuItem(title, n.About)
 		}
 		if n.Type == "dir" {
+			it.SetIcon(menuIcon("folder"))
 			addNodes(it, dataDir, n.Children)
 			continue
 		}
+		icon := "clipboard"
+		if n.Action == "inject" {
+			icon = "keyboard"
+		}
+		it.SetIcon(menuIcon(icon))
 		if !n.Enabled {
 			it.Disable()
 			continue
