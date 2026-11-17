@@ -22,7 +22,7 @@ When a snippet is clicked in the menu, it fires its configured action.
 Action can be configured per snippet (editor / Preferences Bulk Edit).
 Available actions are:
 - Clipboard - place snippet content in clipboard so it can be pasted
-- Inject - inject the snippet at cursor position, wherever it might be!
+- Inject - inject the snippet at cursor position, wherever it might be. The app remembers the last foreground window that is not snipperting (and not the Windows tray), so a tray click still pastes into that window.
 - Enable/Disable - Gray out the snippet in the menu, it will be listed but can't be clicked (set in Bulk Edit)
 
 Subfolder opens a native submenu to the side.
@@ -81,8 +81,8 @@ Snippet settings such as state, action, hidden.
 This will update the settings in each and every snippet file.
 Looks like a labeled list, and every row has:
 - left aligned: filename, label
-- right aligned: toggle buttons for
-  - action: inject/clipboard
+- right aligned:
+  - action: two push-like buttons, Inject and Clipboard; the selected one is pressed
   - state: on/off
   - hidden: on/off
 Subfolders are displayed folded, can be unfolded to view items, are indented in display.
