@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>snipperting editor</title>
+  <link rel="stylesheet" href="/web/app.css">
+</head>
+<body>
+  <div class="toolbar">
+    <strong>Editor</strong>
+    <span id="cur" class="muted grow"></span>
+    <button type="button" id="save">Save</button>
+  </div>
+  <div id="edwrap">
+    <div id="files"></div>
+    <div id="monaco"></div>
+  </div>
+  <script src="/web/app.js"></script>
+  <script>
+    let editor = null;
+    let current = "";
+    const files = document.getElementById("files");
+    const cur = document.getElementById("cur");
+
+    function renderTree(nodes, host, depth) {
+      for (const n of nodes || []) {
+        const el = document.createElement("div");
+        el.className = "n " + n.type + " indent-" + Math.min(depth, 3);
+        el.textContent = n.type === "dir" ? n.name : (n.label || n.name);
+        el.title = n.path;
+        if (n.type === "file") {
+          el.addEventListener("click", () => openFile(n.path));
+        }
+        host.appendChild(el);
+        if (n.type === "dir") renderTree(n.children, host, depth + 1);
+      }
+    }
+
+    async function openFile(path) {
+      const got = await api("/api/file?path=" + encodeURIComponent(path));
+      current = path;
+      cur.textContent = path;
+      if (editor) editor.setValue(got.content || "");
+      files.querySelectorAll(".n").forEach((n) => n.classList.toggle("on", n.title === path));
+    }
+
+    document.getElementById("save").addEventListener("click", async () => {
+      if (!current || !editor) return;
+      await fetch("/api/file?path=" + encodeURIComponent(current), {
+        method: "PUT",
+        headers: { "Content-Type": "text/markdown" },
+        body: editor.getValue(),
+      });
+    });
+
+    async function boot() {
+      const cfg = await applyTheme();
+      const tree = await api("/api/snippets");
+      files.innerHTML = "";
+      renderTree(tree.children || [], files, 0);
+      const q = new URLSearchParams(location.search).get("path");
+      await loadMonaco(cfg.theme);
+      if (q) await openFile(q);
+    }
+
+    function loadMonaco(theme) {
+      const vs = "/web/vendor/monaco/vs";
+      return new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = vs + "/loader.js";
+        s.onload = () => {
+          require.config({ paths: { vs } });
+          require(["vs/editor/editor.main"], () => {
+            const dark = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+            editor = monaco.editor.create(document.getElementById("monaco"), {
+              value: "",
+              language: "markdown",
+              automaticLayout: true,
+              theme: dark ? "vs-dark" : "vs",
+              wordWrap: "on",
+            });
+            resolve();
+          });
+        };
+        s.onerror = () => {
+          document.getElementById("monaco").textContent = "Monaco missing. Run: just vendor-monaco";
+          reject(new Error("monaco"));
+        };
+        document.head.appendChild(s);
+      });
+    }
+
+    boot().catch((e) => { cur.textContent = e.message; });
+  </script>
+</body>
+</html>

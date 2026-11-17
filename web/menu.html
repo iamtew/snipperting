@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>snipperting</title>
+  <link rel="stylesheet" href="/web/app.css">
+</head>
+<body class="menu">
+  <div id="list"></div>
+  <div class="foot">
+    <div class="item"><div class="label" data-ui="editor">Edit</div></div>
+    <div class="item"><div class="label" data-ui="prefs">Preferences</div></div>
+    <div class="item"><div class="label" data-ui="help">Help</div></div>
+    <div class="item"><div class="label" data-ui="about">About</div></div>
+    <div class="item"><div class="label" data-ui="exit">Exit</div></div>
+  </div>
+  <div id="ctx" class="ctx" hidden></div>
+  <script src="/web/app.js"></script>
+  <script>
+    const list = document.getElementById("list");
+    const ctx = document.getElementById("ctx");
+
+    function fileNodes(nodes) {
+      return (nodes || []).filter((n) => n.type !== "file" || !n.hidden);
+    }
+
+    function renderNodes(nodes, host) {
+      for (const n of fileNodes(nodes)) {
+        if (n.type === "dir") {
+          const row = document.createElement("div");
+          row.className = "item folder";
+          row.innerHTML = `<div class="label">${esc(n.name)} ▸</div>`;
+          const sub = document.createElement("div");
+          sub.className = "sub";
+          renderNodes(n.children || [], sub);
+          row.appendChild(sub);
+          host.appendChild(row);
+          continue;
+        }
+        const row = document.createElement("div");
+        row.className = "item" + (n.enabled ? "" : " disabled");
+        row.title = n.about || n.label;
+        const lab = document.createElement("div");
+        lab.className = "label";
+        lab.textContent = n.label || n.name;
+        const btn = document.createElement("button");
+        btn.className = "act";
+        btn.type = "button";
+        btn.title = opposite(n.action);
+        const icon = opposite(n.action) === "inject" ? "keyboard" : "clipboard";
+        btn.innerHTML = `<img src="/web/vendor/tabler/${icon}.svg" alt="${opposite(n.action)}" width="16" height="16">`;
+        row.appendChild(lab);
+        row.appendChild(btn);
+        if (n.enabled) {
+          lab.addEventListener("click", () => fire(n, n.action));
+          btn.addEventListener("click", (e) => { e.stopPropagation(); fire(n, opposite(n.action)); });
+        }
+        row.addEventListener("contextmenu", (e) => { e.preventDefault(); showCtx(e, n); });
+        host.appendChild(row);
+      }
+    }
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    async function fire(n, op) {
+      try {
+        await doAct(n.path, op);
+        window.close();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function showCtx(e, n) {
+      ctx.hidden = false;
+      ctx.style.left = e.clientX + "px";
+      ctx.style.top = e.clientY + "px";
+      const other = opposite(n.action);
+      ctx.innerHTML = "";
+      const mk = (t, fn) => {
+        const d = document.createElement("div");
+        d.textContent = t;
+        d.addEventListener("click", fn);
+        ctx.appendChild(d);
+      };
+      mk("Action: " + other, async () => {
+        await doAct(n.path, "set-action", other);
+        ctx.hidden = true;
+        boot();
+      });
+      mk(n.enabled ? "Disable" : "Enable", async () => {
+        await doAct(n.path, "toggle-state");
+        ctx.hidden = true;
+        boot();
+      });
+      mk("Edit", async () => {
+        await openUI("editor", n.path);
+        window.close();
+      });
+    }
+
+    document.addEventListener("click", () => { ctx.hidden = true; });
+
+    document.querySelectorAll("[data-ui]").forEach((el) => {
+      el.addEventListener("click", async () => {
+        const kind = el.getAttribute("data-ui");
+        await openUI(kind);
+        if (kind !== "exit") window.close();
+      });
+    });
+
+    async function boot() {
+      await applyTheme();
+      const tree = await api("/api/snippets");
+      list.innerHTML = "";
+      renderNodes(tree.children || [], list);
+    }
+    boot().catch((e) => { list.textContent = e.message; });
+  </script>
+</body>
+</html>
