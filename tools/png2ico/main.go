@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/png"
 	"os"
+	"path/filepath"
 
 	_ "image/png"
 )
@@ -17,6 +18,9 @@ func main() {
 		os.Exit(2)
 	}
 	in, out := os.Args[1], os.Args[2]
+	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
+		fatal(err)
+	}
 	f, err := os.Open(in)
 	if err != nil {
 		fatal(err)
