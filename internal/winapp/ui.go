@@ -45,6 +45,11 @@ const (
 	esAutoV = 0x0040
 	esAutoH = 0x0080
 
+	bsCheck    = 0x0002
+	bsPushLike = 0x00001000
+	bmSetCheck = 0x00F1
+	bstChecked = 1
+
 	tviLast       = ^uintptr(0xFFFD) // (HTREEITEM)-0xFFFE
 	tviRoot       = ^uintptr(0xFFFF) // (HTREEITEM)-0x10000
 	tvmInsert     = 0x1132
@@ -427,20 +432,22 @@ func (p *panel) addBulk(nodes []snippet.Node, depth int) {
 			hid = "hidden"
 		}
 		path := n.Path
-		ab := p.button(p.bulk, act, 0, 0, 88, 24)
+		inj := p.pushLike(p.bulk, "Inject", act == "inject")
+		clip := p.pushLike(p.bulk, "Clipboard", act == "clipboard")
 		sb := p.button(p.bulk, st, 0, 0, 64, 24)
 		hb := p.button(p.bulk, hid, 0, 0, 72, 24)
 		p.placed = append(p.placed,
-			placed{hwnd: ab, row: row, col: 1},
-			placed{hwnd: sb, row: row, col: 2},
-			placed{hwnd: hb, row: row, col: 3},
+			placed{hwnd: inj, row: row, col: 1},
+			placed{hwnd: clip, row: row, col: 2},
+			placed{hwnd: sb, row: row, col: 3},
+			placed{hwnd: hb, row: row, col: 4},
 		)
-		p.clicks[ab] = func() {
-			next := "inject"
-			if act == "inject" {
-				next = "clipboard"
-			}
-			_ = snippet.UpdateMeta(uiCfg.Get().DataDir, path, func(m *snippet.Meta) { m.Action = next })
+		p.clicks[inj] = func() {
+			_ = snippet.UpdateMeta(uiCfg.Get().DataDir, path, func(m *snippet.Meta) { m.Action = "inject" })
+			p.rebuildPrefs()
+		}
+		p.clicks[clip] = func() {
+			_ = snippet.UpdateMeta(uiCfg.Get().DataDir, path, func(m *snippet.Meta) { m.Action = "clipboard" })
 			p.rebuildPrefs()
 		}
 		p.clicks[sb] = func() {
@@ -476,13 +483,15 @@ func (p *panel) layoutBulk() {
 		y := int32(pl.row*rowH) - p.scroll
 		switch pl.col {
 		case 0:
-			move(pl.hwnd, pl.x, y, w-pl.x-240, rowH-4)
+			move(pl.hwnd, pl.x, y, w-pl.x-316, rowH-4)
 		case 1:
-			move(pl.hwnd, w-236, y, 88, rowH-4)
+			move(pl.hwnd, w-308, y, 80, rowH-4)
 		case 2:
-			move(pl.hwnd, w-144, y, 64, rowH-4)
+			move(pl.hwnd, w-224, y, 80, rowH-4)
 		case 3:
-			move(pl.hwnd, w-76, y, 72, rowH-4)
+			move(pl.hwnd, w-140, y, 64, rowH-4)
+		case 4:
+			move(pl.hwnd, w-72, y, 72, rowH-4)
 		}
 	}
 	setScroll(p.bulk, int32(p.rows*rowH), uint32(bh), p.scroll)
@@ -1025,6 +1034,14 @@ func create(parent uintptr, class, title string, style uint32, x, y, w, h int32,
 
 func (p *panel) button(parent uintptr, title string, x, y, w, h int32) uintptr {
 	return uintptr(create(parent, "BUTTON", title, wsChild|wsVis|wsTab, x, y, w, h, 0))
+}
+
+func (p *panel) pushLike(parent uintptr, title string, on bool) uintptr {
+	h := uintptr(create(parent, "BUTTON", title, wsChild|wsVis|wsTab|bsCheck|bsPushLike, 0, 0, 80, 24, 0))
+	if on {
+		send(h, bmSetCheck, bstChecked, 0)
+	}
+	return h
 }
 
 func (p *panel) static(parent uintptr, title string, x, y, w, h int32) uintptr {
