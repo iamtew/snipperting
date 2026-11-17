@@ -206,12 +206,13 @@ func Open(kind, file string) {
 }
 
 func initControls() {
+	enableVisualStyles()
+	setDPI()
+	guiFont = messageFont()
 	var icc struct{ size, flags uint32 }
 	icc.size = 8
 	icc.flags = 0xFF
 	windows.NewLazySystemDLL("comctl32.dll").NewProc("InitCommonControlsEx").Call(uintptr(unsafe.Pointer(&icc)))
-	h, _, _ := windows.NewLazySystemDLL("gdi32.dll").NewProc("GetStockObject").Call(17)
-	guiFont = h
 }
 
 func registerFrame() {
@@ -577,7 +578,8 @@ func openEditor(file string) {
 	p.clicks[folder] = p.newFolder
 	p.clicks[save] = p.saveActive
 	p.clicks[closeTab] = p.closeActive
-	p.tree = uintptr(create(p.hwnd, "SysTreeView32", "", wsChild|wsVis|wsBorder|0x0027, 8, 40, 260, 640, 0))
+	p.tree = uintptr(createEx(exClientEdge, p.hwnd, "SysTreeView32", "", wsChild|wsVis|tvsHasButtons|tvsShowSelAlways|tvsFullRowSelect, 8, 40, 260, 640, 0))
+	explorerTheme(p.tree)
 	p.tabs = uintptr(create(p.hwnd, "SysTabControl32", "", wsChild|wsVis|wsClip, 276, 40, 800, 28, 0))
 	p.host = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsClip, 276, 68, 800, 612, 0))
 	p.fillTree()
@@ -1079,11 +1081,11 @@ func (p *panel) static(parent uintptr, title string, x, y, w, h int32) uintptr {
 }
 
 func (p *panel) edit(parent uintptr, title string, x, y, w, h int32, multi bool) uintptr {
-	st := uint32(wsChild | wsVis | wsBorder | esAutoH | wsTab)
+	st := uint32(wsChild | wsVis | esAutoH | wsTab)
 	if multi {
-		st = wsChild | wsVis | wsBorder | wsVScroll | esMulti | esRead | esAutoV
+		st = wsChild | wsVis | wsVScroll | esMulti | esRead | esAutoV
 	}
-	return uintptr(create(parent, "EDIT", title, st, x, y, w, h, 0))
+	return uintptr(createEx(exClientEdge, parent, "EDIT", title, st, x, y, w, h, 0))
 }
 
 func textOf(h uintptr) string {
