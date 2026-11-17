@@ -1,3 +1,7 @@
 # Affinity Studio lock files
 assets/*.af~lock~
 
+dist/
+build/
+web/vendor/monaco/
+*.exe
