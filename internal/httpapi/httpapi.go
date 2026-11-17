@@ -80,9 +80,6 @@ func (s *Server) routes() {
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	port := 0
-	if h, _, err := net.SplitHostPort(r.Host); err == nil && h != "" {
-		_, _ = h, port
-	}
 	if _, p, err := net.SplitHostPort(r.Host); err == nil {
 		fmt.Sscanf(p, "%d", &port)
 	}
