@@ -31,6 +31,7 @@ const (
 	wmSetFont    = 0x0030
 	wmGetText    = 0x000D
 	wmGetTextLen = 0x000E
+	wmTimer      = 0x0113
 
 	wsOver    = 0x00CF0000
 	wsVis     = 0x10000000
@@ -228,6 +229,7 @@ func createPump() {
 	uiMu.Lock()
 	uiHwnd = uintptr(h)
 	uiMu.Unlock()
+	StartForegroundWatch(uiHwnd)
 	post(uintptr(h), wmOpen, 0, 0)
 }
 
@@ -246,6 +248,10 @@ func messageLoop() {
 func wndProc(hwnd, msg, wp, lp uintptr) uintptr {
 	if msg == wmOpen {
 		drain()
+		return 0
+	}
+	if msg == wmTimer {
+		WatchForeground()
 		return 0
 	}
 	if p := panels[hwnd]; p != nil {

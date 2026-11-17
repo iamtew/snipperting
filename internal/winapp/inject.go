@@ -1,34 +1,124 @@
 package winapp
 
 import (
+	"os"
 	"time"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 var (
-	procGetForeground = user32.NewProc("GetForegroundWindow")
-	procSetForeground = user32.NewProc("SetForegroundWindow")
-	procGetCursor     = user32.NewProc("GetCursorPos")
-	lastForeground    uintptr
+	procGetForeground    = user32.NewProc("GetForegroundWindow")
+	procSetForeground    = user32.NewProc("SetForegroundWindow")
+	procSendInput        = user32.NewProc("SendInput")
+	procGetClassName     = user32.NewProc("GetClassNameW")
+	procIsWindow         = user32.NewProc("IsWindow")
+	procIsIconic         = user32.NewProc("IsIconic")
+	procShowWindow       = user32.NewProc("ShowWindow")
+	procBringToTop       = user32.NewProc("BringWindowToTop")
+	procAttachThread     = user32.NewProc("AttachThreadInput")
+	procGetGUIThreadInfo = user32.NewProc("GetGUIThreadInfo")
+	procSetFocus         = user32.NewProc("SetFocus")
+	procAllowForeground  = user32.NewProc("AllowSetForegroundWindow")
+	procGetWindowThread  = user32.NewProc("GetWindowThreadProcessId")
+	procGetCurrentThread = kernel32.NewProc("GetCurrentThreadId")
+	procSetTimer         = user32.NewProc("SetTimer")
+	lastForeground       uintptr
 )
 
-type point struct{ X, Y int32 }
-
-func RememberForeground() {
-	h, _, _ := procGetForeground.Call()
-	lastForeground = h
+type guiThreadInfo struct {
+	size                                         uint32
+	flags                                        uint32
+	hwndActive, hwndFocus, hwndCapture           uintptr
+	hwndMenuOwner, hwndMoveSize, hwndCaret       uintptr
+	caretLeft, caretTop, caretRight, caretBottom int32
 }
 
-func RestoreForeground() {
-	if lastForeground != 0 {
-		procSetForeground.Call(lastForeground)
+func StartForegroundWatch(hwnd uintptr) {
+	procSetTimer.Call(hwnd, 1, 100, 0)
+}
+
+func WatchForeground() {
+	rememberIfOther()
+}
+
+func RememberForeground() {
+	rememberIfOther()
+}
+
+func rememberIfOther() {
+	h, _, _ := procGetForeground.Call()
+	if keepForeground(h) {
+		lastForeground = h
 	}
 }
 
-func CursorPos() (int, int) {
-	var p point
-	procGetCursor.Call(uintptr(unsafe.Pointer(&p)))
-	return int(p.X), int(p.Y)
+func keepForeground(h uintptr) bool {
+	if h == 0 {
+		return false
+	}
+	var pid uint32
+	procGetWindowThread.Call(h, uintptr(unsafe.Pointer(&pid)))
+	if pid == uint32(os.Getpid()) {
+		return false
+	}
+	var buf [64]uint16
+	n, _, _ := procGetClassName.Call(h, uintptr(unsafe.Pointer(&buf[0])), 64)
+	if n == 0 {
+		return true
+	}
+	switch windows.UTF16ToString(buf[:]) {
+	case "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "NotifyIconOverflowWindow":
+		return false
+	}
+	return true
+}
+
+func RestoreForeground() {
+	h := lastForeground
+	if h == 0 {
+		return
+	}
+	if live, _, _ := procIsWindow.Call(h); live == 0 {
+		return
+	}
+	forceForeground(h)
+}
+
+func forceForeground(hwnd uintptr) {
+	procAllowForeground.Call(^uintptr(0)) // ASFW_ANY
+	fg, _, _ := procGetForeground.Call()
+	tgtTid, _, _ := procGetWindowThread.Call(hwnd, 0)
+	fgTid, _, _ := procGetWindowThread.Call(fg, 0)
+	cur, _, _ := procGetCurrentThread.Call()
+	if fgTid != 0 && fgTid != cur {
+		procAttachThread.Call(cur, fgTid, 1)
+	}
+	if tgtTid != 0 && tgtTid != cur && tgtTid != fgTid {
+		procAttachThread.Call(cur, tgtTid, 1)
+	}
+	if iconic, _, _ := procIsIconic.Call(hwnd); iconic != 0 {
+		procShowWindow.Call(hwnd, 9) // SW_RESTORE
+	}
+	procBringToTop.Call(hwnd)
+	procSetForeground.Call(hwnd)
+	var info guiThreadInfo
+	info.size = uint32(unsafe.Sizeof(info))
+	procGetGUIThreadInfo.Call(tgtTid, uintptr(unsafe.Pointer(&info)))
+	focus := info.hwndCaret
+	if focus == 0 {
+		focus = info.hwndFocus
+	}
+	if focus != 0 {
+		procSetFocus.Call(focus)
+	}
+	if tgtTid != 0 && tgtTid != cur && tgtTid != fgTid {
+		procAttachThread.Call(cur, tgtTid, 0)
+	}
+	if fgTid != 0 && fgTid != cur {
+		procAttachThread.Call(cur, fgTid, 0)
+	}
 }
 
 func Inject(text string) error {
@@ -65,8 +155,6 @@ type inputKB struct {
 	Extra uint64
 	_end  uint64
 }
-
-var procSendInput = user32.NewProc("SendInput")
 
 func sendCtrlV() error {
 	inputs := []inputKB{
