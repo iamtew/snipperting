@@ -3,9 +3,9 @@
 Windows SysTray snippets app. Spec is the Bible: [docs/app-spec.md](docs/app-spec.md). App and spec stay in line. Changes not in the spec need a spec update first (Clanker can draft it).
 
 - **Logo:** [assets/logo.png](assets/logo.png) is Meat Bag owned. Never modify it or `assets/logo.af`. Copy/derive only via Just (`just icon`, `just docs-logo`).
-- **Stack:** Go 1.26, Just, stdlib HTTP on `127.0.0.1` ports **45690–45699** (first free). Native energye/systray menu for snippets. WebView2 only for editor, prefs, help, about. No Wails.
-- **Config:** `config.json` next to the executable, created on first start. Not shipped. Keys: `dataDir` (default `~/.snipperting`), `theme` (`system`|`light`|`dark`).
-- **Data:** Markdown files with optional `----` header (`label`, `about`, `action`, `state`, `hidden`). Subfolders = menu categories.
+- **Stack:** Go 1.26, Just, stdlib HTTP on `127.0.0.1` ports **45690–45699** (first free). HTTP only serves Monaco files and `GET /api/health`. Tray, prefs, help, and about are native. WebView2 is a child of the editor window and only hosts Monaco. No Wails.
+- **Config:** `config.json` next to the executable, created on first start. Not shipped. Keys: `dataDir` (default `~/.snipperting`), `theme` (`system`|`light`|`dark`, Monaco only).
+- **Data:** Markdown files with optional `----` header (`label`, `about`, `action`, `state`, `hidden`). Subfolders = menu categories. Read and written natively, not via HTTP.
 - **Verify:** `just test`. After `just run`, `GET http://127.0.0.1:45690/api/health` (try 45690–45699).
 
 ## File map
@@ -14,10 +14,11 @@ Windows SysTray snippets app. Spec is the Bible: [docs/app-spec.md](docs/app-spe
 cmd/snipperting/main.go     process, mutex, tray
 internal/config             JSON config
 internal/snippet            ---- parser + data-dir tree
-internal/httpapi            pages + JSON API
-internal/winapp             tray, webview, clipboard, inject
+internal/httpapi            health + Monaco files only
+internal/winapp             tray, native windows, Monaco child, clipboard, inject
 tools/png2ico               PNG → .ico (copies, does not touch assets/logo.png)
-web/                        editor, prefs, help, about
+tools/tabler                Tabler SVG → 16px .ico for the tray menu
+web/                        editor shell + vendored Monaco and Tabler
 docs/                       GitHub Pages + MANUAL.md (also go:embed for Help)
 installer/snipperting.iss   Inno → %LOCALAPPDATA%\snipperting
 ```

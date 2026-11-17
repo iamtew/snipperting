@@ -6,7 +6,7 @@ snipperting keeps text snippets in Markdown files and serves them from the Windo
 
 Install into `%LOCALAPPDATA%\snipperting`. Start snipperting from the Start Menu shortcut.
 
-The app listens on `127.0.0.1` port 45690–45699 (first free port). It does not accept connections from the network.
+The app listens on `127.0.0.1` port 45690–45699 (first free port) so the editor can load Monaco. It does not accept connections from the network. Preferences, help, and about are native windows.
 
 ## Data folder
 
@@ -49,12 +49,12 @@ Click the tray icon for a native Windows menu (no extra window).
 
 ## Editor
 
-Edit opens a window with a file tree of the data directory and a Markdown editor (Monaco). Save writes the `.md` file, header included.
+Edit opens a native window. The file tree is native. The text area is Monaco inside that window. Save writes the `.md` file, header included.
 
 ## Preferences
 
 - **Data directory** — where snippets live
-- **Theme** — System, Light, or Dark (all snipperting web windows)
+- **Theme** — System, Light, or Dark (Monaco pane)
 - **Bulk Edit** — change action, state, and hidden on many snippets at once
 
 ## Config

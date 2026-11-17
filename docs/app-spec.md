@@ -1,8 +1,8 @@
 # snipperting - Snippets tool for Windows
 Save text snippets and easily access them from SysTray icon.
 Windows application, accessed via menu from SysTray.
-App runs a little HTTP server listening on on 127.0.0.1 port 45690..45699.
-Web server is used for basic web apps, the editor, the preferences window, etc. things we might find useful.
+App listens on 127.0.0.1 port 45690..45699 only so the Monaco editor can load its scripts, and so `GET /api/health` can confirm the process is up.
+Snippet files, the tray menu, preferences, help, and about are native. They do not go through HTTP.
 Written in Go, using Justfile for command runner, ships with installer for ease of use.
 Installs somewhere local for user, for example some %LOCALDATA% sub-folder.
 Application keeps basic config in JSON file, next to installed executable. 
@@ -33,7 +33,9 @@ Footer items under a separator:
 - About
 - Exit
 
-Edit, Preferences, Help, and About open WebView2 windows. The snippet list itself is native only.
+Edit, Preferences, Help, and About are native windows. Edit's right pane is the only WebView2 surface, and it only hosts Monaco. The snippet list itself is the native tray menu.
+
+Tray items for snippets, folders, Edit, Preferences, and Help use vendored Tabler icons (rasterized to `.ico` for the native menu).
 
 ## Data folder
 Snippets data is stored in plain text files, markdown, with .md file extension.
@@ -58,13 +60,12 @@ Wow a snippet body, so fancy!
 ```
 
 ## Editor
-The editor is built using Monaco JS editor in an web window, not the browser. 
-Monaco is full on Markdown mode and supports everything Markdown, tables, etc.
-Editor must have a file browser that browses the data dir and we are going to edit files in the data dir.
-When editor launched from main menu, it opens into the file browser and user can select which file to edit.
+The editor is a native window. The file list is a native tree of the data dir.
+The text pane is Monaco (full Markdown) hosted as a child of that window, not a separate browser window and not the system browser.
+Launched from the tray menu, it opens on the file tree. The user picks a file to edit. Save writes the `.md` file, header included.
 
 ## Preferences
-Preferences window is where we configure Snipperting.
+Preferences is a native window where we configure Snipperting.
 Things to configure, starting out:
 - Data directory: Location.
 - Theme: System, Light, Dark.
@@ -74,9 +75,8 @@ Things to configure, starting out:
 Where all snippets are stored, default `~/.snipperting`
 
 ### Theme:
-This is the theme for all the webapp pages we're going to make.
-Default theme is System, it will follow system for dark/light.
-Dark or Light theme can be selected to override, obviously.
+Theme applies to the Monaco pane. Default is System (follow Windows light/dark).
+Light or Dark overrides that. Native dialogs use normal Windows controls.
 
 ### Bulk Edit preferences tab:
 Change things in bulk over multiple snippets. 
