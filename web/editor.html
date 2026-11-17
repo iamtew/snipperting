@@ -76,6 +76,14 @@ require(["vs/editor/editor.main"], function () {
     window.chrome.webview.postMessage(JSON.stringify({ t: "save", p: p, v: editor.getValue() }));
   };
 
+  window.snipSaveAll = function () {
+    const files = [];
+    for (const p in models) {
+      files.push({ p: p, v: models[p].getValue() });
+    }
+    window.chrome.webview.postMessage(JSON.stringify({ t: "saveall", files: files }));
+  };
+
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function () {
     window.snipGet();
   });

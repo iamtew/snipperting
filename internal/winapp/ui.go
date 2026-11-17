@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"unsafe"
 
@@ -49,6 +51,18 @@ const (
 	tvmDelete     = 0x1101
 	tvifTextParam = 0x0005
 	tvnSelChanged = ^uint32(450) // TVN_SELCHANGEDW = -451
+
+	tcmInsert    = 0x133E
+	tcmSetCur    = 0x130C
+	tcmGetCur    = 0x130B
+	tcmDelete    = 0x1308
+	tcmSetItem   = 0x133D
+	tcifText     = 0x0001
+	tcnSelChange = ^uint32(550) // TCN_SELCHANGE = -551
+
+	mbYesNoCancel = 0x00000033
+	idYes         = 6
+	idNo          = 7
 
 	rowH = 28
 )
@@ -115,24 +129,42 @@ type nmtv struct {
 	pt      uint64
 }
 
+type tcitem struct {
+	mask        uint32
+	dwState     uint32
+	dwStateMask uint32
+	pszText     uintptr
+	cchTextMax  int32
+	iImage      int32
+	lParam      uintptr
+}
+
 type panel struct {
-	kind     string
-	hwnd     uintptr
-	clicks   map[uintptr]func()
-	dataEdit uintptr
-	bulk     uintptr
-	placed   []placed
-	rows     int
-	scroll   int32
-	opened   map[string]bool
-	tree     uintptr
-	host     uintptr
-	nodes    []tnode
-	curPath  string
-	pending  string
-	ready    bool
-	chrome   *edge.Chromium
-	dataDir  string
+	kind       string
+	hwnd       uintptr
+	clicks     map[uintptr]func()
+	dataEdit   uintptr
+	bulk       uintptr
+	placed     []placed
+	rows       int
+	scroll     int32
+	opened     map[string]bool
+	tree       uintptr
+	tabs       uintptr
+	host       uintptr
+	nodes      []tnode
+	open       []string
+	dirty      map[string]bool
+	selDir     string
+	curPath    string
+	pending    string
+	dropAfter  string
+	closing    bool
+	promptOK   bool
+	promptDone bool
+	ready      bool
+	chrome     *edge.Chromium
+	dataDir    string
 }
 
 func StartUI(cfg *config.Store, port int, manual, version string) {
@@ -268,7 +300,7 @@ func (p *panel) onMsg(hwnd, msg, wp, lp uintptr) bool {
 		}
 	case wmNotify:
 		if p.kind == "editor" {
-			p.onTree(lp)
+			p.onNotify(lp)
 			return true
 		}
 	case wmSize:
@@ -288,6 +320,12 @@ func (p *panel) onMsg(hwnd, msg, wp, lp uintptr) bool {
 		}
 	case wmClose:
 		if hwnd == p.hwnd {
+			if p.kind == "editor" && !p.canClose() {
+				return true
+			}
+			if p.kind == "prompt" {
+				p.promptDone = true
+			}
 			destroy(hwnd)
 			return true
 		}
@@ -298,6 +336,9 @@ func (p *panel) onMsg(hwnd, msg, wp, lp uintptr) bool {
 				delete(panels, p.bulk)
 			}
 			p.hwnd = 0
+			if p.kind == "prompt" {
+				p.promptDone = true
+			}
 		}
 	}
 	return false
@@ -490,17 +531,20 @@ func openAbout() {
 }
 
 func openEditor(file string) {
-	p := &panel{kind: "editor", clicks: map[uintptr]func(){}, dataDir: uiCfg.Get().DataDir}
+	p := &panel{kind: "editor", clicks: map[uintptr]func(){}, dataDir: uiCfg.Get().DataDir, dirty: map[string]bool{}}
 	p.hwnd = uintptr(frame("Editor", 1100, 720))
 	panels[p.hwnd] = p
-	save := p.button(p.hwnd, "Save", 8, 6, 72, 26)
-	p.clicks[save] = func() {
-		if p.chrome != nil && p.curPath != "" {
-			p.chrome.Eval(`window.snipGet&&window.snipGet()`)
-		}
-	}
+	note := p.button(p.hwnd, "New note", 8, 6, 88, 26)
+	folder := p.button(p.hwnd, "New folder", 100, 6, 88, 26)
+	save := p.button(p.hwnd, "Save", 192, 6, 72, 26)
+	closeTab := p.button(p.hwnd, "Close tab", 268, 6, 88, 26)
+	p.clicks[note] = p.newNote
+	p.clicks[folder] = p.newFolder
+	p.clicks[save] = p.saveActive
+	p.clicks[closeTab] = p.closeActive
 	p.tree = uintptr(create(p.hwnd, "SysTreeView32", "", wsChild|wsVis|wsBorder|0x0027, 8, 40, 260, 640, 0))
-	p.host = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsClip, 276, 40, 800, 640, 0))
+	p.tabs = uintptr(create(p.hwnd, "SysTabControl32", "", wsChild|wsVis|wsClip, 276, 40, 800, 28, 0))
+	p.host = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsClip, 276, 68, 800, 612, 0))
 	p.fillTree()
 	p.chrome = edge.NewChromium()
 	if local := os.Getenv("LOCALAPPDATA"); local != "" {
@@ -508,9 +552,13 @@ func openEditor(file string) {
 	}
 	p.chrome.MessageCallback = func(msg string) {
 		var m struct {
-			T string `json:"t"`
-			V string `json:"v"`
-			P string `json:"p"`
+			T     string `json:"t"`
+			V     string `json:"v"`
+			P     string `json:"p"`
+			Files []struct {
+				P string `json:"p"`
+				V string `json:"v"`
+			} `json:"files"`
 		}
 		if json.Unmarshal([]byte(msg), &m) != nil {
 			return
@@ -520,6 +568,24 @@ func openEditor(file string) {
 			p.push()
 			return
 		}
+		if m.T == "dirty" && m.P != "" {
+			p.dirty[m.P] = true
+			p.refreshTab(m.P)
+			return
+		}
+		if m.T == "saveall" {
+			for _, f := range m.Files {
+				if f.P != "" {
+					_ = snippet.Write(p.dataDir, f.P, []byte(f.V))
+					p.dirty[f.P] = false
+					p.refreshTab(f.P)
+				}
+			}
+			if p.closing {
+				destroy(p.hwnd)
+			}
+			return
+		}
 		if m.T == "save" {
 			rel := m.P
 			if rel == "" {
@@ -527,6 +593,15 @@ func openEditor(file string) {
 			}
 			if rel != "" {
 				_ = snippet.Write(p.dataDir, rel, []byte(m.V))
+				p.dirty[rel] = false
+				p.refreshTab(rel)
+			}
+			if p.dropAfter != "" && p.dropAfter == rel {
+				p.dropAfter = ""
+				p.removeTab(rel)
+			}
+			if p.closing {
+				destroy(p.hwnd)
 			}
 		}
 	}
@@ -557,11 +632,10 @@ func (p *panel) fillTree() {
 
 func (p *panel) addTree(parent uintptr, nodes []snippet.Node) {
 	for _, n := range nodes {
-		if n.Type == "file" && n.Hidden {
-			continue
-		}
 		label := n.Label
 		if n.Type == "dir" {
+			label = n.Name
+		} else if label == "" {
 			label = n.Name
 		}
 		p.nodes = append(p.nodes, tnode{path: n.Path, file: n.Type == "file"})
@@ -586,27 +660,34 @@ func (p *panel) insertTree(parent uintptr, label string, idx uintptr) uintptr {
 	return send(p.tree, tvmInsert, 0, uintptr(unsafe.Pointer(&ins)))
 }
 
-func (p *panel) onTree(lp uintptr) {
+func (p *panel) onNotify(lp uintptr) {
+	hdr := (*nmhdr)(unsafe.Pointer(lp))
+	if hdr.hwndFrom == p.tabs && hdr.code == tcnSelChange {
+		i := int(send(p.tabs, tcmGetCur, 0, 0))
+		p.activate(i)
+		return
+	}
+	if hdr.hwndFrom != p.tree {
+		return
+	}
 	nm := (*nmtv)(unsafe.Pointer(lp))
 	if nm.hdr.code != tvnSelChanged {
 		return
 	}
 	i := int(nm.itemNew.lParam)
-	if i < 0 || i >= len(p.nodes) || !p.nodes[i].file {
+	if i < 0 || i >= len(p.nodes) {
 		return
 	}
-	p.loadFile(p.nodes[i].path)
+	n := p.nodes[i]
+	if n.file {
+		p.openPath(n.path)
+		return
+	}
+	p.selDir = n.path
 }
 
 func (p *panel) loadFile(rel string) {
-	raw, err := snippet.Read(p.dataDir, rel)
-	if err != nil {
-		return
-	}
-	p.curPath = rel
-	p.pending = string(raw)
-	setText(p.hwnd, "Editor — "+rel)
-	p.push()
+	p.openPath(rel)
 }
 
 func (p *panel) push() {
@@ -621,6 +702,263 @@ func (p *panel) push() {
 		return
 	}
 	p.chrome.Eval(fmt.Sprintf("window.snipSet&&window.snipSet(%s,%t)", string(b), dark))
+}
+
+func (p *panel) saveActive() {
+	if p.chrome != nil && p.curPath != "" {
+		p.chrome.Eval(`window.snipGet&&window.snipGet()`)
+	}
+}
+
+func (p *panel) closeActive() {
+	if p.curPath == "" {
+		return
+	}
+	p.closePath(p.curPath)
+}
+
+func (p *panel) hasDirty() bool {
+	for _, d := range p.dirty {
+		if d {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *panel) canClose() bool {
+	if !p.hasDirty() {
+		return true
+	}
+	switch msgBox(p.hwnd, "Save unsaved notes?", "Editor", mbYesNoCancel) {
+	case idYes:
+		p.closing = true
+		if p.chrome != nil {
+			p.chrome.Eval(`window.snipSaveAll&&window.snipSaveAll()`)
+			return false
+		}
+		return true
+	case idNo:
+		return true
+	default:
+		return false
+	}
+}
+
+func (p *panel) openPath(rel string) {
+	for i, t := range p.open {
+		if t == rel {
+			send(p.tabs, tcmSetCur, uintptr(i), 0)
+			p.activate(i)
+			return
+		}
+	}
+	raw, err := snippet.Read(p.dataDir, rel)
+	if err != nil {
+		return
+	}
+	p.open = append(p.open, rel)
+	p.insertTab(len(p.open)-1, tabTitle(rel, false))
+	send(p.tabs, tcmSetCur, uintptr(len(p.open)-1), 0)
+	p.curPath = rel
+	p.pending = string(raw)
+	setText(p.hwnd, "Editor — "+rel)
+	p.push()
+}
+
+func (p *panel) activate(i int) {
+	if i < 0 || i >= len(p.open) {
+		return
+	}
+	p.curPath = p.open[i]
+	setText(p.hwnd, "Editor — "+p.curPath)
+	if p.chrome == nil || !p.ready {
+		return
+	}
+	path, _ := json.Marshal(p.curPath)
+	dark := monacoDark("system")
+	p.chrome.Eval(fmt.Sprintf("window.snipSwitch&&window.snipSwitch(%s,%t)", string(path), dark))
+}
+
+func (p *panel) closePath(rel string) {
+	if p.dirty[rel] {
+		switch msgBox(p.hwnd, "Save "+rel+"?", "Editor", mbYesNoCancel) {
+		case idYes:
+			p.dropAfter = rel
+			if p.curPath != rel {
+				for i, t := range p.open {
+					if t == rel {
+						send(p.tabs, tcmSetCur, uintptr(i), 0)
+						p.activate(i)
+						break
+					}
+				}
+			}
+			p.saveActive()
+			return
+		case idNo:
+			p.dirty[rel] = false
+		default:
+			return
+		}
+	}
+	p.removeTab(rel)
+}
+
+func (p *panel) removeTab(rel string) {
+	idx := -1
+	for i, t := range p.open {
+		if t == rel {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return
+	}
+	if p.chrome != nil && p.ready {
+		path, _ := json.Marshal(rel)
+		p.chrome.Eval(fmt.Sprintf("window.snipClose&&window.snipClose(%s)", string(path)))
+	}
+	send(p.tabs, tcmDelete, uintptr(idx), 0)
+	p.open = append(p.open[:idx], p.open[idx+1:]...)
+	delete(p.dirty, rel)
+	if len(p.open) == 0 {
+		p.curPath = ""
+		setText(p.hwnd, "Editor")
+		return
+	}
+	next := idx
+	if next >= len(p.open) {
+		next = len(p.open) - 1
+	}
+	send(p.tabs, tcmSetCur, uintptr(next), 0)
+	p.activate(next)
+}
+
+func (p *panel) insertTab(i int, title string) {
+	u, _ := windows.UTF16FromString(title)
+	item := tcitem{mask: tcifText, pszText: uintptr(unsafe.Pointer(&u[0]))}
+	send(p.tabs, tcmInsert, uintptr(i), uintptr(unsafe.Pointer(&item)))
+}
+
+func (p *panel) refreshTab(rel string) {
+	for i, t := range p.open {
+		if t != rel {
+			continue
+		}
+		u, _ := windows.UTF16FromString(tabTitle(rel, p.dirty[rel]))
+		item := tcitem{mask: tcifText, pszText: uintptr(unsafe.Pointer(&u[0]))}
+		send(p.tabs, tcmSetItem, uintptr(i), uintptr(unsafe.Pointer(&item)))
+		return
+	}
+}
+
+func tabTitle(rel string, dirty bool) string {
+	name := path.Base(filepath.ToSlash(rel))
+	if dirty {
+		return "*" + name
+	}
+	return name
+}
+
+func (p *panel) folderPrefix() string {
+	if p.selDir != "" {
+		return p.selDir
+	}
+	if p.curPath == "" {
+		return ""
+	}
+	d := path.Dir(filepath.ToSlash(p.curPath))
+	if d == "." {
+		return ""
+	}
+	return d
+}
+
+func leafName(s string) (string, bool) {
+	s = strings.TrimSpace(s)
+	if s == "" || strings.ContainsAny(s, `/\`) || strings.Contains(s, "..") {
+		return "", false
+	}
+	return s, true
+}
+
+func joinRel(dir, name string) string {
+	if dir == "" {
+		return name
+	}
+	return dir + "/" + name
+}
+
+func (p *panel) newFolder() {
+	name, ok := askName(p.hwnd, "New folder")
+	if !ok {
+		return
+	}
+	name, ok = leafName(name)
+	if !ok {
+		return
+	}
+	rel := joinRel(p.folderPrefix(), name)
+	if err := snippet.CreateDir(p.dataDir, rel); err != nil {
+		return
+	}
+	p.selDir = rel
+	p.fillTree()
+}
+
+func (p *panel) newNote() {
+	name, ok := askName(p.hwnd, "New note")
+	if !ok {
+		return
+	}
+	name, ok = leafName(name)
+	if !ok {
+		return
+	}
+	rel := joinRel(p.folderPrefix(), name)
+	if err := snippet.CreateFile(p.dataDir, rel); err != nil {
+		return
+	}
+	if !strings.EqualFold(filepath.Ext(rel), ".md") {
+		rel = strings.TrimSuffix(rel, filepath.Ext(rel)) + ".md"
+	}
+	p.fillTree()
+	p.openPath(rel)
+}
+
+func askName(owner uintptr, title string) (string, bool) {
+	p := &panel{kind: "prompt", clicks: map[uintptr]func(){}}
+	p.hwnd = create(owner, "", title, 0x90C80000, 200, 200, 360, 140, 0)
+	panels[p.hwnd] = p
+	p.static(p.hwnd, "Name", 12, 12, 80, 18)
+	p.dataEdit = p.edit(p.hwnd, "", 12, 36, 320, 24, false)
+	ok := p.button(p.hwnd, "OK", 168, 72, 72, 26)
+	cancel := p.button(p.hwnd, "Cancel", 248, 72, 80, 26)
+	p.clicks[ok] = func() {
+		p.pending = textOf(p.dataEdit)
+		p.promptOK = true
+		p.promptDone = true
+		destroy(p.hwnd)
+	}
+	p.clicks[cancel] = func() {
+		p.promptDone = true
+		destroy(p.hwnd)
+	}
+	enableWin(owner, false)
+	var msg wmsg
+	for !p.promptDone {
+		r, _, _ := pGetMsg.Call(uintptr(unsafe.Pointer(&msg)), 0, 0, 0)
+		if r == 0 || int32(r) == -1 {
+			break
+		}
+		pTrans.Call(uintptr(unsafe.Pointer(&msg)))
+		pDispatch.Call(uintptr(unsafe.Pointer(&msg)))
+	}
+	enableWin(owner, true)
+	focus(owner)
+	return p.pending, p.promptOK
 }
 
 func (p *panel) onSize() {
@@ -642,8 +980,11 @@ func (p *panel) onSize() {
 		if p.tree != 0 {
 			move(p.tree, 8, 40, 260, h-48)
 		}
+		if p.tabs != 0 {
+			move(p.tabs, 276, 40, w-284, 28)
+		}
 		if p.host != 0 {
-			move(p.host, 276, 40, w-284, h-48)
+			move(p.host, 276, 68, w-284, h-76)
 			if p.chrome != nil {
 				p.chrome.Resize()
 			}

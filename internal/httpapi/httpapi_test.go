@@ -76,6 +76,9 @@ func TestEditorHTMLHasWorker(t *testing.T) {
 	if !bytes.Contains(b, []byte("snipOpen")) {
 		t.Fatal("editor.html must expose snipOpen")
 	}
+	if !bytes.Contains(b, []byte("snipSaveAll")) {
+		t.Fatal("editor.html must expose snipSaveAll")
+	}
 }
 
 func TestListenRange(t *testing.T) {

@@ -24,6 +24,8 @@ var (
 	pMetrics   = u32.NewProc("GetSystemMetrics")
 	pLoadImage = u32.NewProc("LoadImageW")
 	pScroll    = u32.NewProc("SetScrollInfo")
+	pEnable    = u32.NewProc("EnableWindow")
+	pMsgBox    = u32.NewProc("MessageBoxW")
 	k32        = windows.NewLazySystemDLL("kernel32.dll")
 	pModule    = k32.NewProc("GetModuleHandleW")
 )
@@ -94,4 +96,19 @@ func loadIco(path string) uintptr {
 	p, _ := windows.UTF16PtrFromString(path)
 	h, _, _ := pLoadImage.Call(0, uintptr(unsafe.Pointer(p)), 1, 64, 64, 0x10)
 	return h
+}
+
+func enableWin(h uintptr, on bool) {
+	var v uintptr
+	if on {
+		v = 1
+	}
+	pEnable.Call(h, v)
+}
+
+func msgBox(owner uintptr, text, caption string, flags uintptr) int {
+	t, _ := windows.UTF16PtrFromString(text)
+	c, _ := windows.UTF16PtrFromString(caption)
+	r, _, _ := pMsgBox.Call(owner, uintptr(unsafe.Pointer(t)), uintptr(unsafe.Pointer(c)), flags)
+	return int(r)
 }
