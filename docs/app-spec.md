@@ -60,35 +60,33 @@ Wow a snippet body, so fancy!
 ```
 
 ## Editor
-The editor is a native window. The file list is a native tree of the data dir.
-The text pane is Monaco (full Markdown) hosted as a child of that window, not a separate browser window and not the system browser.
-Launched from the tray menu, it opens on the file tree. The user picks a file to edit. Save writes the `.md` file, header included.
+The editor is a native window. The file list is a native tree of the data dir (all `.md` files, including hidden, and empty folders).
+Toolbar: New note, New folder, Save. New note writes a `.md` with the default `----` header.
+Native tabs keep several notes open. Closing a dirty tab (or the window) prompts before discard. Ctrl+S saves the active tab.
+The text pane is one Monaco (full Markdown) hosted as a child of that window, not a separate browser window and not the system browser. Monaco follows Windows light/dark.
+Launched from the tray menu, it opens on the file tree. Save writes the `.md` file, header included.
 
 ## Preferences
 Preferences is a native window where we configure Snipperting.
 Things to configure, starting out:
 - Data directory: Location.
-- Theme: System, Light, Dark.
 - Bulk Edit
 
 ### Data directory: 
 Where all snippets are stored, default `~/.snipperting`
 
-### Theme:
-Theme applies to the Monaco pane. Default is System (follow Windows light/dark).
-Light or Dark overrides that. Native dialogs use normal Windows controls.
-
-### Bulk Edit preferences tab:
+### Bulk Edit:
 Change things in bulk over multiple snippets. 
 Snippet settings such as state, action, hidden. 
 This will update the settings in each and every snippet file.
-Looks like a list, and every row has:
+Looks like a labeled list, and every row has:
 - left aligned: filename, label
 - right aligned: toggle buttons for
   - action: inject/clipboard
   - state: on/off
   - hidden: on/off
 Subfolders are displayed folded, can be unfolded to view items, are indented in display.
+Empty data dir shows an empty-state line.
 
 ## `./docs` folder, website and documentation
 The `./docs` folder shall contain a website for GitHub pages.
