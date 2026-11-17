@@ -42,7 +42,6 @@ const (
 	esRead  = 0x0800
 	esAutoV = 0x0040
 	esAutoH = 0x0080
-	cbsDrop = 0x0003
 
 	tviLast       = ^uintptr(0xFFFD) // (HTREEITEM)-0xFFFE
 	tviRoot       = ^uintptr(0xFFFF) // (HTREEITEM)-0x10000
@@ -121,7 +120,6 @@ type panel struct {
 	hwnd     uintptr
 	clicks   map[uintptr]func()
 	dataEdit uintptr
-	themeBox uintptr
 	bulk     uintptr
 	placed   []placed
 	rows     int
@@ -310,25 +308,18 @@ func openPrefs() {
 	p.hwnd = uintptr(frame("Preferences", 720, 560))
 	panels[p.hwnd] = p
 	p.static(p.hwnd, "Data directory", 12, 12, 200, 18)
-	p.dataEdit = p.edit(p.hwnd, "", 12, 32, 680, 24, false)
-	p.static(p.hwnd, "Theme", 12, 64, 80, 18)
-	p.themeBox = p.combo(p.hwnd, 100, 60, 160, 200)
-	for _, t := range []string{"system", "light", "dark"} {
-		addCombo(p.themeBox, t)
-	}
-	save := p.button(p.hwnd, "Save", 280, 60, 80, 26)
+	p.dataEdit = p.edit(p.hwnd, "", 12, 32, 580, 24, false)
+	save := p.button(p.hwnd, "Save", 600, 30, 80, 26)
 	p.clicks[save] = p.savePrefs
-	p.bulk = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsVScroll|wsClip, 0, 100, 704, 420, 0))
+	p.static(p.hwnd, "Bulk Edit", 12, 68, 200, 18)
+	p.bulk = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsVScroll|wsClip, 0, 90, 704, 430, 0))
 	panels[p.bulk] = p
 	p.rebuildPrefs()
 }
 
 func (p *panel) savePrefs() {
-	theme := comboText(p.themeBox)
-	if theme != "light" && theme != "dark" {
-		theme = "system"
-	}
-	_ = uiCfg.Set(config.File{DataDir: textOf(p.dataEdit), Theme: theme})
+	cur := uiCfg.Get()
+	_ = uiCfg.Set(config.File{DataDir: textOf(p.dataEdit), Theme: cur.Theme})
 	p.rebuildPrefs()
 }
 
@@ -342,17 +333,13 @@ func (p *panel) rebuildPrefs() {
 	p.scroll = 0
 	cur := uiCfg.Get()
 	setText(p.dataEdit, cur.DataDir)
-	sel := 0
-	switch cur.Theme {
-	case "light":
-		sel = 1
-	case "dark":
-		sel = 2
-	}
-	send(p.themeBox, 0x014E, uintptr(sel), 0)
 	tree, err := snippet.Walk(cur.DataDir)
-	if err == nil {
+	if err == nil && len(tree.Children) > 0 {
 		p.addBulk(tree.Children, 0)
+	} else {
+		lab := p.static(p.bulk, "No snippets yet. Create notes in Edit.", 0, 0, 400, 24)
+		p.placed = append(p.placed, placed{hwnd: lab, row: 0, col: 0, x: 12})
+		p.rows = 1
 	}
 	p.layoutBulk()
 }
@@ -628,8 +615,11 @@ func (p *panel) onSize() {
 			move(p.dataEdit, 8, 8, w-16, h-16)
 		}
 	case "prefs":
+		if p.dataEdit != 0 {
+			move(p.dataEdit, 12, 32, w-120, 24)
+		}
 		if p.bulk != 0 {
-			move(p.bulk, 0, 100, w, h-100)
+			move(p.bulk, 0, 90, w, h-90)
 			p.layoutBulk()
 		}
 	case "editor":
@@ -690,27 +680,6 @@ func (p *panel) edit(parent uintptr, title string, x, y, w, h int32, multi bool)
 		st = wsChild | wsVis | wsBorder | wsVScroll | esMulti | esRead | esAutoV
 	}
 	return uintptr(create(parent, "EDIT", title, st, x, y, w, h, 0))
-}
-
-func (p *panel) combo(parent uintptr, x, y, w, h int32) uintptr {
-	return uintptr(create(parent, "COMBOBOX", "", wsChild|wsVis|wsTab|cbsDrop|0x0200, x, y, w, h, 0))
-}
-
-func addCombo(box uintptr, s string) {
-	u, _ := windows.UTF16PtrFromString(s)
-	send(box, 0x0143, 0, uintptr(unsafe.Pointer(u)))
-}
-
-func comboText(box uintptr) string {
-	i := send(box, 0x0147, 0, 0)
-	switch i {
-	case 1:
-		return "light"
-	case 2:
-		return "dark"
-	default:
-		return "system"
-	}
 }
 
 func textOf(h uintptr) string {
