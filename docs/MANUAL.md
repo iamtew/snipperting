@@ -45,7 +45,7 @@ Click the tray icon for a native Windows menu (no extra window).
 - Edit, Preferences, Help, About, Exit sit under a separator
 - Change action, enabled, or hidden in Preferences → Bulk Edit
 
-**Clipboard** copies the snippet body. **Inject** pastes it at the caret in the window that was focused before the menu opened.
+**Clipboard** copies the snippet body. **Inject** pastes at the caret in the last window you were typing in (not snipperting and not the tray), even after the tray click steals focus.
 
 ## Editor
 
@@ -54,7 +54,7 @@ Edit opens a native window. The file tree is native (all `.md` files and folders
 ## Preferences
 
 - **Data directory** — where snippets live
-- **Bulk Edit** — change action, state, and hidden on many snippets at once
+- **Bulk Edit** — Inject vs Clipboard are two buttons; the pressed one is the current action. State and hidden stay on/off and shown/hidden.
 
 ## Config
 
