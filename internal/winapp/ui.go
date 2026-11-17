@@ -46,10 +46,12 @@ const (
 	esAutoV = 0x0040
 	esAutoH = 0x0080
 
-	bsCheck    = 0x0002
-	bsPushLike = 0x00001000
-	bmSetCheck = 0x00F1
-	bstChecked = 1
+	bsCheck     = 0x0002
+	bsAutoCheck = 0x0003
+	bsPushLike  = 0x00001000
+	bmGetCheck  = 0x00F0
+	bmSetCheck  = 0x00F1
+	bstChecked  = 1
 
 	tviLast       = ^uintptr(0xFFFD) // (HTREEITEM)-0xFFFE
 	tviRoot       = ^uintptr(0xFFFF) // (HTREEITEM)-0x10000
@@ -150,6 +152,7 @@ type panel struct {
 	hwnd       uintptr
 	clicks     map[uintptr]func()
 	dataEdit   uintptr
+	clipCheck  uintptr
 	bulk       uintptr
 	placed     []placed
 	rows       int
@@ -251,6 +254,10 @@ func wndProc(hwnd, msg, wp, lp uintptr) uintptr {
 		return 0
 	}
 	if msg == wmTimer {
+		if hwnd == toastHwnd {
+			hideCopiedToast()
+			return 0
+		}
 		WatchForeground()
 		return 0
 	}
@@ -273,6 +280,10 @@ func drain() {
 }
 
 func show(kind, file string) {
+	if kind == "toast" {
+		showCopiedToast()
+		return
+	}
 	for _, p := range panels {
 		if p.kind == kind && p.hwnd != 0 {
 			showWin(p.hwnd)
@@ -363,15 +374,17 @@ func openPrefs() {
 	p.dataEdit = p.edit(p.hwnd, "", 12, 32, 580, 24, false)
 	save := p.button(p.hwnd, "Save", 600, 30, 80, 26)
 	p.clicks[save] = p.savePrefs
-	p.static(p.hwnd, "Bulk Edit", 12, 68, 200, 18)
-	p.bulk = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsVScroll|wsClip, 0, 90, 704, 430, 0))
+	p.clipCheck = uintptr(create(p.hwnd, "BUTTON", "Show copied notice", wsChild|wsVis|wsTab|bsAutoCheck, 12, 64, 220, 24, 0))
+	p.static(p.hwnd, "Bulk Edit", 12, 94, 200, 18)
+	p.bulk = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsVScroll|wsClip, 0, 116, 704, 404, 0))
 	panels[p.bulk] = p
 	p.rebuildPrefs()
 }
 
 func (p *panel) savePrefs() {
 	cur := uiCfg.Get()
-	_ = uiCfg.Set(config.File{DataDir: textOf(p.dataEdit), Theme: cur.Theme})
+	notice := send(p.clipCheck, bmGetCheck, 0, 0) != 0
+	_ = uiCfg.Set(config.File{DataDir: textOf(p.dataEdit), Theme: cur.Theme, ClipNotice: notice})
 	p.rebuildPrefs()
 }
 
@@ -385,6 +398,13 @@ func (p *panel) rebuildPrefs() {
 	p.scroll = 0
 	cur := uiCfg.Get()
 	setText(p.dataEdit, cur.DataDir)
+	if p.clipCheck != 0 {
+		v := uintptr(0)
+		if cur.ClipNotice {
+			v = bstChecked
+		}
+		send(p.clipCheck, bmSetCheck, v, 0)
+	}
 	tree, err := snippet.Walk(cur.DataDir)
 	if err == nil && len(tree.Children) > 0 {
 		p.addBulk(tree.Children, 0)
@@ -988,7 +1008,7 @@ func (p *panel) onSize() {
 			move(p.dataEdit, 12, 32, w-120, 24)
 		}
 		if p.bulk != 0 {
-			move(p.bulk, 0, 90, w, h-90)
+			move(p.bulk, 0, 116, w, h-116)
 			p.layoutBulk()
 		}
 	case "editor":
@@ -1021,6 +1041,10 @@ func frame(title string, w, h int32) uintptr {
 }
 
 func create(parent uintptr, class, title string, style uint32, x, y, w, h int32, id uintptr) uintptr {
+	return createEx(0, parent, class, title, style, x, y, w, h, id)
+}
+
+func createEx(ex uint32, parent uintptr, class, title string, style uint32, x, y, w, h int32, id uintptr) uintptr {
 	cls := class
 	if cls == "" {
 		cls = "snippertingFrame"
@@ -1031,7 +1055,7 @@ func create(parent uintptr, class, title string, style uint32, x, y, w, h int32,
 	if parent == 0 && class == "" && style == 0 {
 		par = ^uintptr(2) // HWND_MESSAGE
 	}
-	hwnd, _, _ := pCreate.Call(0, uintptr(unsafe.Pointer(c)), uintptr(unsafe.Pointer(t)), uintptr(style), uintptr(x), uintptr(y), uintptr(w), uintptr(h), par, id, moduleHandle(), 0)
+	hwnd, _, _ := pCreate.Call(uintptr(ex), uintptr(unsafe.Pointer(c)), uintptr(unsafe.Pointer(t)), uintptr(style), uintptr(x), uintptr(y), uintptr(w), uintptr(h), par, id, moduleHandle(), 0)
 	if guiFont != 0 && hwnd != 0 {
 		send(hwnd, wmSetFont, guiFont, 1)
 	}

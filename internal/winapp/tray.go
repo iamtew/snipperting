@@ -108,4 +108,5 @@ func fireSnippet(dataDir, rel, action string) {
 		return
 	}
 	_ = SetClipboard(body)
+	NotifyCopied()
 }
