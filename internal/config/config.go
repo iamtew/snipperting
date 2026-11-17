@@ -10,8 +10,9 @@ import (
 const Version = "0.0.1"
 
 type File struct {
-	DataDir string `json:"dataDir"`
-	Theme   string `json:"theme"`
+	DataDir    string `json:"dataDir"`
+	Theme      string `json:"theme"`
+	ClipNotice bool   `json:"clipNotice"`
 }
 
 type Store struct {
@@ -49,7 +50,8 @@ func Load() (*Store, error) {
 			return nil, err
 		}
 		missing = true
-	} else if err := json.Unmarshal(b, &s.cur); err != nil {
+		s.cur.ClipNotice = true
+	} else if err := decodeFile(b, &s.cur); err != nil {
 		return nil, err
 	}
 	if err := s.normalize(); err != nil {
@@ -63,8 +65,27 @@ func Load() (*Store, error) {
 	return s, nil
 }
 
+func decodeFile(b []byte, cur *File) error {
+	var d struct {
+		DataDir    string `json:"dataDir"`
+		Theme      string `json:"theme"`
+		ClipNotice *bool  `json:"clipNotice"`
+	}
+	if err := json.Unmarshal(b, &d); err != nil {
+		return err
+	}
+	cur.DataDir = d.DataDir
+	cur.Theme = d.Theme
+	if d.ClipNotice == nil {
+		cur.ClipNotice = true
+	} else {
+		cur.ClipNotice = *d.ClipNotice
+	}
+	return nil
+}
+
 func LoadAt(configPath, dataDir string) (*Store, error) {
-	s := &Store{path: configPath, cur: File{DataDir: dataDir, Theme: "system"}}
+	s := &Store{path: configPath, cur: File{DataDir: dataDir, Theme: "system", ClipNotice: true}}
 	if err := s.normalize(); err != nil {
 		return nil, err
 	}
