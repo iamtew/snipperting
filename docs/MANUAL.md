@@ -37,13 +37,13 @@ Snippet body goes here.
 
 ## Tray menu
 
-Left-click the tray icon (or Open) for the snippet menu.
+Click the tray icon for a native Windows menu (no extra window).
 
-- Click a snippet to run its action
-- The button on the right runs the other action (inject ↔ clipboard)
-- Right-click a snippet: set action, enable/disable, or Edit
-- Folders open to the side
-- Edit, Preferences, Help, About, Exit sit under the list
+- Click a snippet to run its configured action (`clipboard` or `inject`)
+- Disabled snippets stay in the list but are grayed out
+- Folders open as submenus
+- Edit, Preferences, Help, About, Exit sit under a separator
+- Change action, enabled, or hidden in Preferences → Bulk Edit
 
 **Clipboard** copies the snippet body. **Inject** pastes it at the caret in the window that was focused before the menu opened.
 

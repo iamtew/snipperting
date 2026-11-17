@@ -24,16 +24,9 @@ func main() {
 	}
 	web := httpapi.FindWebRoot()
 	hooks := httpapi.Hooks{
-		Clipboard: func(text string) error {
-			winapp.CloseMenu()
-			return winapp.SetClipboard(text)
-		},
-		Inject: func(text string) error {
-			winapp.CloseMenu()
-			return winapp.Inject(text)
-		},
+		Clipboard: winapp.SetClipboard,
+		Inject:    winapp.Inject,
 		OpenUI: func(kind, file string) {
-			winapp.CloseMenu()
 			base := fmt.Sprintf("http://127.0.0.1:%d", listenPort)
 			switch kind {
 			case "editor":
@@ -66,7 +59,7 @@ func main() {
 		}
 	}()
 	icon := loadIcon()
-	winapp.RunTray(port, icon, func() { _ = ln.Close() })
+	winapp.RunTray(port, icon, cfg, func() { _ = ln.Close() })
 }
 
 var listenPort int

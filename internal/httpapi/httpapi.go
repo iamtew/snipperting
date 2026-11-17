@@ -68,7 +68,6 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/manual", s.getManual)
 	s.mux.HandleFunc("POST /api/ui", s.openUI)
 	s.mux.HandleFunc("GET /manual", s.getManual)
-	s.mux.HandleFunc("GET /menu", s.page("menu.html"))
 	s.mux.HandleFunc("GET /editor", s.page("editor.html"))
 	s.mux.HandleFunc("GET /prefs", s.page("prefs.html"))
 	s.mux.HandleFunc("GET /help", s.page("help.html"))

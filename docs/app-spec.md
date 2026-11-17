@@ -16,34 +16,24 @@ Original stays in place.
 Other icons used by `snipperting` shall be taken from Tabler.io/icons and vendored into project.
 
 ## SysTray menu
+The tray icon uses a **native Windows menu** (left-click and right-click). It must not open a web window for the snippet list.
 SysTray menu shows list of snippets, and sub-categories of snippets.
-When a snippet is clicked in the menu, it fires an action.
-Action can be configured per snippet.
+When a snippet is clicked in the menu, it fires its configured action.
+Action can be configured per snippet (editor / Preferences Bulk Edit).
 Available actions are:
 - Clipboard - place snippet content in clipboard so it can be pasted
 - Inject - inject the snippet at cursor position, wherever it might be!
-- Enable/Disable - Gray out the snippet in the menu, it will be listed but can't be clicked
+- Enable/Disable - Gray out the snippet in the menu, it will be listed but can't be clicked (set in Bulk Edit)
 
-### Menu look and buttons
-Menu has an item, and a delimiter, and then right aligned is one action button.
-Action button is the opposite action compared to what clicking the Item does. 
-If action = Inject, action button = Clipboard, vice versa.
-Right click on an item to get a menu, where Action can be set, and enable/disable, or an Edit button that opens the editor.
-Subfolder opens a menu to the side.
-Menu looks something like this:
-+---------------+
-| Item 1    | A |
-| Item 2    | A |
-| Item 3    | A |
-| Subfolder    >|
-| ...           | 
-+---------------+
-| Edit          |
-| Preferences   |
-| Help          |
-| About         |
-| Exit          |
-+---------------+
+Subfolder opens a native submenu to the side.
+Footer items under a separator:
+- Edit
+- Preferences
+- Help
+- About
+- Exit
+
+Edit, Preferences, Help, and About open WebView2 windows. The snippet list itself is native only.
 
 ## Data folder
 Snippets data is stored in plain text files, markdown, with .md file extension.
