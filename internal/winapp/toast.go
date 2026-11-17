@@ -33,7 +33,7 @@ func showCopiedToast() {
 	y := area.bottom - th - 16
 	if toastHwnd == 0 {
 		ex := uint32(exNoActivate | exTopmost | exToolWindow)
-		st := uint32(wsPopup | wsVis | wsBorder)
+		st := uint32(wsPopup | wsVis)
 		toastHwnd = createEx(ex, 0, "", "", st, x, y, tw, th, 0)
 		create(toastHwnd, "STATIC", "Copied to clipboard", wsChild|wsVis, 8, 10, tw-16, 24, 0)
 	} else {

@@ -13,7 +13,6 @@ import (
 
 	"github.com/jchv/go-webview2/pkg/edge"
 	"golang.org/x/sys/windows"
-	"golang.org/x/sys/windows/registry"
 
 	"snipperting/internal/config"
 	"snipperting/internal/snippet"
@@ -164,6 +163,7 @@ type panel struct {
 	nodes      []tnode
 	open       []string
 	dirty      map[string]bool
+	on         map[uintptr]bool
 	selDir     string
 	curPath    string
 	pending    string
@@ -186,6 +186,7 @@ func StartUI(cfg *config.Store, port int, manual, version string) {
 		go func() {
 			runtime.LockOSThread()
 			initControls()
+			loadPalette()
 			registerFrame()
 			createPump()
 			close(ready)
@@ -222,7 +223,7 @@ func registerFrame() {
 		size:      uint32(unsafe.Sizeof(wclass{})),
 		wndProc:   wndCB,
 		instance:  moduleHandle(),
-		bg:        6,
+		bg:        classBrush(),
 		className: &classU[0],
 	}
 	pReg.Call(uintptr(unsafe.Pointer(&wc)))
@@ -250,6 +251,22 @@ func messageLoop() {
 }
 
 func wndProc(hwnd, msg, wp, lp uintptr) uintptr {
+	if msg == wmSettingChange && immersive(lp) {
+		reloadTheme()
+		return 0
+	}
+	if msg == wmCtlColorStatic || msg == wmCtlColorEdit || msg == wmCtlColorBtn {
+		if b := ctlColor(wp, lp); b != 0 {
+			return b
+		}
+	}
+	if msg == wmErase {
+		return eraseBg(hwnd, wp)
+	}
+	if msg == wmDrawItem {
+		paintOwned(hwnd, lp)
+		return 1
+	}
 	if msg == wmOpen {
 		drain()
 		return 0
@@ -368,7 +385,7 @@ func (p *panel) onMsg(hwnd, msg, wp, lp uintptr) bool {
 }
 
 func openPrefs() {
-	p := &panel{kind: "prefs", clicks: map[uintptr]func(){}, opened: map[string]bool{}}
+	p := &panel{kind: "prefs", clicks: map[uintptr]func(){}, opened: map[string]bool{}, on: map[uintptr]bool{}}
 	p.hwnd = uintptr(frame("Preferences", 720, 560))
 	panels[p.hwnd] = p
 	p.static(p.hwnd, "Data directory", 12, 12, 200, 18)
@@ -376,6 +393,7 @@ func openPrefs() {
 	save := p.button(p.hwnd, "Save", 600, 30, 80, 26)
 	p.clicks[save] = p.savePrefs
 	p.clipCheck = uintptr(create(p.hwnd, "BUTTON", "Show copied notice", wsChild|wsVis|wsTab|bsAutoCheck, 12, 64, 220, 24, 0))
+	themeExplorer(p.clipCheck)
 	p.static(p.hwnd, "Bulk Edit", 12, 94, 200, 18)
 	p.bulk = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsVScroll|wsClip, 0, 116, 704, 404, 0))
 	panels[p.bulk] = p
@@ -393,6 +411,7 @@ func (p *panel) rebuildPrefs() {
 	for _, pl := range p.placed {
 		destroy(pl.hwnd)
 		delete(p.clicks, pl.hwnd)
+		delete(p.on, pl.hwnd)
 	}
 	p.placed = nil
 	p.rows = 0
@@ -567,7 +586,7 @@ func openAbout() {
 }
 
 func openEditor(file string) {
-	p := &panel{kind: "editor", clicks: map[uintptr]func(){}, dataDir: uiCfg.Get().DataDir, dirty: map[string]bool{}}
+	p := &panel{kind: "editor", clicks: map[uintptr]func(){}, dataDir: uiCfg.Get().DataDir, dirty: map[string]bool{}, on: map[uintptr]bool{}}
 	p.hwnd = uintptr(frame("Editor", 1100, 720))
 	panels[p.hwnd] = p
 	note := p.button(p.hwnd, "New note", 8, 6, 88, 26)
@@ -578,9 +597,9 @@ func openEditor(file string) {
 	p.clicks[folder] = p.newFolder
 	p.clicks[save] = p.saveActive
 	p.clicks[closeTab] = p.closeActive
-	p.tree = uintptr(createEx(exClientEdge, p.hwnd, "SysTreeView32", "", wsChild|wsVis|tvsHasButtons|tvsShowSelAlways|tvsFullRowSelect, 8, 40, 260, 640, 0))
+	p.tree = uintptr(create(p.hwnd, "SysTreeView32", "", wsChild|wsVis|tvsHasButtons|tvsShowSelAlways|tvsFullRowSelect, 8, 40, 260, 640, 0))
 	explorerTheme(p.tree)
-	p.tabs = uintptr(create(p.hwnd, "SysTabControl32", "", wsChild|wsVis|wsClip, 276, 40, 800, 28, 0))
+	p.tabs = uintptr(create(p.hwnd, "SysTabControl32", "", wsChild|wsVis|wsClip|tcsOwnerDraw, 276, 40, 800, 28, 0))
 	p.host = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsClip, 276, 68, 800, 612, 0))
 	p.fillTree()
 	p.chrome = edge.NewChromium()
@@ -966,8 +985,9 @@ func (p *panel) newNote() {
 }
 
 func askName(owner uintptr, title string) (string, bool) {
-	p := &panel{kind: "prompt", clicks: map[uintptr]func(){}}
+	p := &panel{kind: "prompt", clicks: map[uintptr]func(){}, on: map[uintptr]bool{}}
 	p.hwnd = create(owner, "", title, 0x90C80000, 200, 200, 360, 140, 0)
+	applyFrame(p.hwnd)
 	panels[p.hwnd] = p
 	p.static(p.hwnd, "Name", 12, 12, 80, 18)
 	p.dataEdit = p.edit(p.hwnd, "", 12, 36, 320, 24, false)
@@ -1039,7 +1059,9 @@ func frame(title string, w, h int32) uintptr {
 	if sh > h {
 		y = (sh - h) / 2
 	}
-	return create(0, "", title, wsOver|wsVis|wsClip, x, y, w, h, 0)
+	hwnd := create(0, "", title, wsOver|wsVis|wsClip, x, y, w, h, 0)
+	applyFrame(hwnd)
+	return hwnd
 }
 
 func create(parent uintptr, class, title string, style uint32, x, y, w, h int32, id uintptr) uintptr {
@@ -1065,14 +1087,15 @@ func createEx(ex uint32, parent uintptr, class, title string, style uint32, x, y
 }
 
 func (p *panel) button(parent uintptr, title string, x, y, w, h int32) uintptr {
-	return uintptr(create(parent, "BUTTON", title, wsChild|wsVis|wsTab, x, y, w, h, 0))
+	return uintptr(create(parent, "BUTTON", title, wsChild|wsVis|wsTab|bsOwner, x, y, w, h, 0))
 }
 
 func (p *panel) pushLike(parent uintptr, title string, on bool) uintptr {
-	h := uintptr(create(parent, "BUTTON", title, wsChild|wsVis|wsTab|bsCheck|bsPushLike, 0, 0, 80, 24, 0))
-	if on {
-		send(h, bmSetCheck, bstChecked, 0)
+	h := uintptr(create(parent, "BUTTON", title, wsChild|wsVis|wsTab|bsOwner, 0, 0, 80, 24, 0))
+	if p.on == nil {
+		p.on = map[uintptr]bool{}
 	}
+	p.on[h] = on
 	return h
 }
 
@@ -1085,7 +1108,9 @@ func (p *panel) edit(parent uintptr, title string, x, y, w, h int32, multi bool)
 	if multi {
 		st = wsChild | wsVis | wsVScroll | esMulti | esRead | esAutoV
 	}
-	return uintptr(createEx(exClientEdge, parent, "EDIT", title, st, x, y, w, h, 0))
+	hwnd := uintptr(createEx(0, parent, "EDIT", title, st, x, y, w, h, 0))
+	colorEdit(hwnd)
+	return hwnd
 }
 
 func textOf(h uintptr) string {
@@ -1108,16 +1133,6 @@ func setScroll(hwnd uintptr, max int32, page uint32, pos int32) {
 		nPos, nTrackPos int32
 	}{cbSize: 28, fMask: 7, nMax: max, nPage: page, nPos: pos}
 	pScroll.Call(hwnd, 1, uintptr(unsafe.Pointer(&raw)), 1)
-}
-
-func monacoDark() bool {
-	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Themes\Personalize`, registry.QUERY_VALUE)
-	if err != nil {
-		return false
-	}
-	defer k.Close()
-	v, _, err := k.GetIntegerValue("AppsUseLightTheme")
-	return err == nil && v == 0
 }
 
 func findIco() string {
