@@ -70,10 +70,14 @@ Launched from the tray menu, it opens on the file tree. Save writes the `.md` fi
 Preferences is a native window where we configure Snipperting.
 Things to configure, starting out:
 - Data directory: Location.
+- Clipboard notice: on/off (default on).
 - Bulk Edit
 
 ### Data directory: 
 Where all snippets are stored, default `~/.snipperting`
+
+### Clipboard notice:
+When a snippet action copies to the clipboard, a small native on-screen notice says it was copied. It must not steal focus. Default on. A checkbox in Preferences enables or disables it. Inject does not show this notice.
 
 ### Bulk Edit:
 Change things in bulk over multiple snippets. 
