@@ -33,7 +33,7 @@ Footer items under a separator:
 - About
 - Exit
 
-Edit, Preferences, Help, and About are native windows. They use Windows visual styles (Common Controls 6) and the system message font (Windows 10 flat, not classic 3D). Edit's right pane is the only WebView2 surface, and it only hosts Monaco. The snippet list itself is the native tray menu.
+Edit, Preferences, Help, and About are native windows. They follow Windows light/dark and use Settings-like colors (system accent, flat chrome). Edit's right pane is the only WebView2 surface, and it only hosts Monaco. The snippet list itself is the native tray menu.
 
 Tray items for snippets, folders, Edit, Preferences, and Help use vendored Tabler icons (rasterized to `.ico` for the native menu).
 
