@@ -168,9 +168,7 @@ func walkDir(root, rel string, n *Node) error {
 			if err := walkDir(root, childRel, &ch); err != nil {
 				return err
 			}
-			if len(ch.Children) > 0 {
-				n.Children = append(n.Children, ch)
-			}
+			n.Children = append(n.Children, ch)
 			continue
 		}
 		if !strings.EqualFold(filepath.Ext(name), ".md") {
@@ -246,4 +244,26 @@ func UpdateMeta(dataDir, rel string, edit func(*Meta)) error {
 		return err
 	}
 	return Write(dataDir, rel, ApplyMeta(raw, edit))
+}
+
+func CreateDir(dataDir, rel string) error {
+	p, err := JoinUnder(dataDir, rel)
+	if err != nil {
+		return err
+	}
+	return os.MkdirAll(p, 0o755)
+}
+
+func CreateFile(dataDir, rel string) error {
+	if !strings.EqualFold(filepath.Ext(rel), ".md") {
+		rel = strings.TrimSuffix(rel, filepath.Ext(rel)) + ".md"
+	}
+	p, err := JoinUnder(dataDir, rel)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(p); err == nil {
+		return os.ErrExist
+	}
+	return Write(dataDir, rel, Encode(defaults(), ""))
 }

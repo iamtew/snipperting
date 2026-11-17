@@ -53,6 +53,9 @@ func TestWalkAndJoin(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(dir, "work"), 0o755); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.MkdirAll(filepath.Join(dir, "empty"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(filepath.Join(dir, "a.md"), Encode(Meta{Label: "Alpha", Action: "clipboard", Enabled: true}, "aaa"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +66,7 @@ func TestWalkAndJoin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(tree.Children) != 2 {
+	if len(tree.Children) != 3 {
 		t.Fatalf("children %+v", tree.Children)
 	}
 	if _, err := JoinUnder(dir, "../secret.md"); err == nil {
@@ -75,6 +78,30 @@ func TestWalkAndJoin(t *testing.T) {
 	}
 	if filepath.Base(p) != "b.md" {
 		t.Fatalf("path %s", p)
+	}
+}
+
+func TestCreateDirAndFile(t *testing.T) {
+	dir := t.TempDir()
+	if err := CreateDir(dir, "notes"); err != nil {
+		t.Fatal(err)
+	}
+	if err := CreateFile(dir, "notes/hello"); err != nil {
+		t.Fatal(err)
+	}
+	if err := CreateFile(dir, "notes/hello.md"); err != os.ErrExist {
+		t.Fatalf("exist %v", err)
+	}
+	if err := CreateFile(dir, "../nope.md"); err == nil {
+		t.Fatal("expected reject")
+	}
+	raw, err := Read(dir, "notes/hello.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := Parse(raw)
+	if d.Meta.Action != "clipboard" || !d.Meta.Enabled {
+		t.Fatalf("header %+v", d.Meta)
 	}
 }
 
