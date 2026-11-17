@@ -28,7 +28,14 @@ require(["vs/editor/editor.main"], function () {
   });
 
   function uri(path) {
-    return monaco.Uri.parse("inmemory://s/" + encodeURIComponent(path));
+    return monaco.Uri.parse("inmemory://s/" + path.split("/").map(encodeURIComponent).join("/"));
+  }
+
+  function pathOf(model) {
+    for (const p in models) {
+      if (models[p] === model) return p;
+    }
+    return "";
   }
 
   function theme(dark) {
@@ -68,11 +75,7 @@ require(["vs/editor/editor.main"], function () {
   };
 
   window.snipGet = function () {
-    const m = editor.getModel();
-    let p = "";
-    if (m && m.uri && m.uri.path) {
-      p = decodeURIComponent(m.uri.path.replace(/^\//, ""));
-    }
+    const p = pathOf(editor.getModel());
     window.chrome.webview.postMessage(JSON.stringify({ t: "save", p: p, v: editor.getValue() }));
   };
 
