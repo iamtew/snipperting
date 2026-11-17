@@ -695,7 +695,7 @@ func (p *panel) push() {
 		return
 	}
 	b, _ := json.Marshal(p.pending)
-	dark := monacoDark("system")
+	dark := monacoDark()
 	path, _ := json.Marshal(p.curPath)
 	if p.curPath != "" {
 		p.chrome.Eval(fmt.Sprintf("window.snipOpen&&window.snipOpen(%s,%s,%t)", string(path), string(b), dark))
@@ -776,7 +776,7 @@ func (p *panel) activate(i int) {
 		return
 	}
 	path, _ := json.Marshal(p.curPath)
-	dark := monacoDark("system")
+	dark := monacoDark()
 	p.chrome.Eval(fmt.Sprintf("window.snipSwitch&&window.snipSwitch(%s,%t)", string(path), dark))
 }
 
@@ -1061,21 +1061,14 @@ func setScroll(hwnd uintptr, max int32, page uint32, pos int32) {
 	pScroll.Call(hwnd, 1, uintptr(unsafe.Pointer(&raw)), 1)
 }
 
-func monacoDark(theme string) bool {
-	switch theme {
-	case "dark":
-		return true
-	case "light":
+func monacoDark() bool {
+	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Themes\Personalize`, registry.QUERY_VALUE)
+	if err != nil {
 		return false
-	default:
-		k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Themes\Personalize`, registry.QUERY_VALUE)
-		if err != nil {
-			return false
-		}
-		defer k.Close()
-		v, _, err := k.GetIntegerValue("AppsUseLightTheme")
-		return err == nil && v == 0
 	}
+	defer k.Close()
+	v, _, err := k.GetIntegerValue("AppsUseLightTheme")
+	return err == nil && v == 0
 }
 
 func findIco() string {

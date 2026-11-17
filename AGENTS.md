@@ -4,7 +4,7 @@ Windows SysTray snippets app. Spec is the Bible: [docs/app-spec.md](docs/app-spe
 
 - **Logo:** [assets/logo.png](assets/logo.png) is Meat Bag owned. Never modify it or `assets/logo.af`. Copy/derive only via Just (`just icon`, `just docs-logo`).
 - **Stack:** Go 1.26, Just, stdlib HTTP on `127.0.0.1` ports **45690–45699** (first free). HTTP only serves Monaco files and `GET /api/health`. Tray, prefs, help, and about are native. WebView2 is a child of the editor window and only hosts Monaco. No Wails.
-- **Config:** `config.json` next to the executable, created on first start. Not shipped. Keys: `dataDir` (default `~/.snipperting`), `theme` (`system`|`light`|`dark`, Monaco only).
+- **Config:** `config.json` next to the executable, created on first start. Not shipped. Key: `dataDir` (default `~/.snipperting`). Monaco follows Windows light/dark. Old `theme` in JSON is ignored.
 - **Data:** Markdown files with optional `----` header (`label`, `about`, `action`, `state`, `hidden`). Subfolders = menu categories. Read and written natively, not via HTTP.
 - **Verify:** `just test`. After `just run`, `GET http://127.0.0.1:45690/api/health` (try 45690–45699).
 
