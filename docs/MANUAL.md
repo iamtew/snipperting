@@ -6,7 +6,7 @@ snipperting keeps text snippets in Markdown files and serves them from the Windo
 
 Install into `%LOCALAPPDATA%\snipperting`. Start snipperting from the Start Menu shortcut.
 
-The editor loads Monaco inside WebView2 from files next to the app. There is no HTTP server. Preferences, Help, and About are native windows. Help shows this manual rendered as markdown, with a table of contents at the top.
+Preferences, Help, and About are native windows. The editor uses Monaco. Help shows this manual rendered as markdown, with a table of contents at the top.
 
 ## Data folder
 
@@ -16,7 +16,7 @@ Each `.md` file is one snippet. Subfolders become menu categories.
 
 ## Snippet files
 
-Optional header (not copied or injected):
+Optional header (clipboard and inject use the body only):
 
 ```
 ----
@@ -37,7 +37,7 @@ Snippet body goes here.
 
 ## Tray menu
 
-Click the tray icon for a native Windows menu (no extra window).
+Click the tray icon for a native Windows menu.
 
 - Click a snippet to run its configured action (`clipboard` or `inject`)
 - Disabled snippets stay in the list but are grayed out
@@ -45,7 +45,7 @@ Click the tray icon for a native Windows menu (no extra window).
 - Edit, Preferences, Help, About, Exit sit under a separator
 - Change action, enabled, or hidden in Preferences → Bulk Edit
 
-**Clipboard** copies the snippet body and, by default, shows a brief “Copied to clipboard” notice (does not steal focus). Turn the notice off in Preferences. **Inject** pastes at the caret in the last window you were typing in (not snipperting and not the tray), even after the tray click steals focus.
+**Clipboard** copies the snippet body and, by default, shows a brief “Copied to clipboard” notice that leaves focus where you were typing. Turn the notice off in Preferences. **Inject** pastes at the caret in the last window you were typing in (not snipperting and not the tray), even after the tray click steals focus.
 
 ## Editor
 
@@ -60,4 +60,4 @@ Edit opens a native window. The file tree is native (all `.md` files and folders
 
 ## Config
 
-`config.json` is created next to the executable on first run. It is not shipped with the installer.
+`config.json` is created next to the executable on first run.
