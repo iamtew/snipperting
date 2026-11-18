@@ -33,4 +33,10 @@ func TestEditorHTMLHasWorker(t *testing.T) {
 	if !bytes.Contains(b, []byte("snipPreview")) {
 		t.Fatal("editor.html must expose snipPreview")
 	}
+	if !bytes.Contains(b, []byte("snipIdle")) {
+		t.Fatal("editor.html must expose snipIdle")
+	}
+	if !bytes.Contains(b, []byte("Open a note from the list on the left.")) {
+		t.Fatal("editor.html must show empty-pane copy")
+	}
 }

@@ -3,8 +3,12 @@
 <head>
   <meta charset="utf-8">
   <style>
-html,body{margin:0;height:100%;overflow:hidden}
-#m{height:100%}
+html,body{margin:0;height:100%;overflow:hidden;background:#8ECAE6;color:#023047}
+@media (prefers-color-scheme:dark){html,body{background:#023047;color:#8ECAE6}}
+html.light,html.light body{background:#8ECAE6;color:#023047}
+html.dark,html.dark body{background:#023047;color:#8ECAE6}
+#m{display:none;height:100%}
+#e{display:flex;align-items:center;justify-content:center;height:100%;padding:2rem;box-sizing:border-box;font:16px/1.55 "Segoe UI",system-ui,sans-serif;color:#219EBC;text-align:center}
 #p{display:none;height:100%;overflow:auto;padding:1.5rem 1.75rem 3rem;box-sizing:border-box;font:16px/1.55 "Segoe UI",system-ui,sans-serif;background:#8ECAE6;color:#023047}
 #p.dark{background:#023047;color:#8ECAE6}
 #p h2{border-bottom:1px solid #219EBC;padding-bottom:.3rem}
@@ -19,6 +23,7 @@ html,body{margin:0;height:100%;overflow:hidden}
 </head>
 <body>
 <div id="m"></div>
+<div id="e">Open a note from the list on the left.</div>
 <div id="p"></div>
 <script src="/vendor/monaco/loader.js" onerror="document.body.textContent='Monaco missing. Run: just vendor-monaco'"></script>
 <script>
@@ -77,13 +82,27 @@ require(["vs/editor/editor.main"], function () {
   }
 
   function theme(dark) {
+    document.documentElement.className = dark ? "dark" : "light";
     monaco.editor.setTheme(dark ? "snip-dark" : "snip-light");
+  }
+
+  function showIdle() {
+    document.getElementById("p").style.display = "none";
+    document.getElementById("m").style.display = "none";
+    document.getElementById("e").style.display = "flex";
+    editor.setModel(null);
   }
 
   function showMonaco() {
     document.getElementById("p").style.display = "none";
+    document.getElementById("e").style.display = "none";
     document.getElementById("m").style.display = "block";
   }
+
+  window.snipIdle = function (dark) {
+    theme(dark);
+    showIdle();
+  };
 
   window.snipOpen = function (path, text, dark) {
     showMonaco();
@@ -109,6 +128,7 @@ require(["vs/editor/editor.main"], function () {
   window.snipPreview = function (html, dark) {
     theme(dark);
     document.getElementById("m").style.display = "none";
+    document.getElementById("e").style.display = "none";
     const el = document.getElementById("p");
     el.className = dark ? "dark" : "";
     el.innerHTML = html || "";

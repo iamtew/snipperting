@@ -1158,7 +1158,14 @@ func (p *panel) push() {
 		p.chrome.Eval(fmt.Sprintf("window.snipOpen&&window.snipOpen(%s,%s,%t)", string(path), string(b), dark))
 		return
 	}
-	p.chrome.Eval(fmt.Sprintf("window.snipSet&&window.snipSet(%s,%t)", string(b), dark))
+	p.idlePane()
+}
+
+func (p *panel) idlePane() {
+	if p.chrome == nil || !p.ready {
+		return
+	}
+	p.chrome.Eval(fmt.Sprintf("window.snipIdle&&window.snipIdle(%t)", monacoDark()))
 }
 
 func (p *panel) saveActive() {
@@ -1300,6 +1307,7 @@ func (p *panel) removeTab(rel string) {
 	if len(p.open) == 0 {
 		p.curPath = ""
 		setText(p.hwnd, "Editor")
+		p.idlePane()
 		return
 	}
 	next := idx
