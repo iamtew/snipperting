@@ -221,24 +221,6 @@ func appsDark() bool {
 	return err == nil && v == 0
 }
 
-func systemAccent() uint32 {
-	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\DWM`, registry.QUERY_VALUE)
-	if err != nil {
-		return rgb(0, 120, 215)
-	}
-	defer k.Close()
-	v, _, err := k.GetIntegerValue("AccentColor")
-	if err != nil || v == 0 {
-		return rgb(0, 120, 215)
-	}
-	return uint32(v) & 0x00FFFFFF
-}
-
-func lum(c uint32) uint32 {
-	r, g, b := c&0xff, (c>>8)&0xff, (c>>16)&0xff
-	return (r*299 + g*587 + b*114) / 1000
-}
-
 func loadPalette() {
 	if uiPal.bgBrush != 0 {
 		pDeleteObj.Call(uiPal.bgBrush)
@@ -246,20 +228,16 @@ func loadPalette() {
 		pDeleteObj.Call(uiPal.accBrush)
 	}
 	uiPal.dark = wantDark()
-	uiPal.accent = systemAccent()
-	if lum(uiPal.accent) > 160 {
-		uiPal.accentText = rgb(0, 0, 0)
-	} else {
-		uiPal.accentText = rgb(255, 255, 255)
-	}
+	uiPal.field = rgb(0x21, 0x9e, 0xbc)
+	uiPal.accentText = rgb(0x02, 0x30, 0x47)
 	if uiPal.dark {
-		uiPal.bg = rgb(0x20, 0x20, 0x20)
-		uiPal.field = rgb(0x2b, 0x2b, 0x2b)
-		uiPal.text = rgb(255, 255, 255)
+		uiPal.bg = rgb(0x02, 0x30, 0x47)
+		uiPal.text = rgb(0x8e, 0xca, 0xe6)
+		uiPal.accent = rgb(0xff, 0xb7, 0x03)
 	} else {
-		uiPal.bg = rgb(0xf3, 0xf3, 0xf3)
-		uiPal.field = rgb(255, 255, 255)
-		uiPal.text = rgb(0, 0, 0)
+		uiPal.bg = rgb(0x8e, 0xca, 0xe6)
+		uiPal.text = rgb(0x02, 0x30, 0x47)
+		uiPal.accent = rgb(0xfb, 0x85, 0x00)
 	}
 	uiPal.bgBrush, _, _ = pCreateBrush.Call(uintptr(uiPal.bg))
 	uiPal.fieldBrush, _, _ = pCreateBrush.Call(uintptr(uiPal.field))

@@ -58,3 +58,24 @@ func TestWantDarkHonorsConfig(t *testing.T) {
 		t.Fatal("light")
 	}
 }
+
+func TestLoadPaletteBrand(t *testing.T) {
+	dir := t.TempDir()
+	s, err := config.LoadAt(filepath.Join(dir, "c.json"), dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	uiCfg = s
+	t.Cleanup(func() { uiCfg = nil })
+	navy, sky, teal := rgb(0x02, 0x30, 0x47), rgb(0x8e, 0xca, 0xe6), rgb(0x21, 0x9e, 0xbc)
+	_ = s.Set(config.File{DataDir: dir, Theme: "light", ClipNotice: true})
+	loadPalette()
+	if uiPal.bg != sky || uiPal.field != teal || uiPal.text != navy || uiPal.accent != rgb(0xfb, 0x85, 0x00) || uiPal.accentText != navy {
+		t.Fatalf("light %#v", uiPal)
+	}
+	_ = s.Set(config.File{DataDir: dir, Theme: "dark", ClipNotice: true})
+	loadPalette()
+	if uiPal.bg != navy || uiPal.field != teal || uiPal.text != sky || uiPal.accent != rgb(0xff, 0xb7, 0x03) || uiPal.accentText != navy {
+		t.Fatalf("dark %#v", uiPal)
+	}
+}
