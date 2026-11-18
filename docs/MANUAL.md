@@ -42,6 +42,8 @@ Under the line at the bottom:
 
 Open **Edit** from the tray. It is modeled on VS Code: a file tree on the left and Monaco on the right. Folders are listed first, then files. Names are the real file and folder names on disk (not the menu label). Hidden snippets still show up here so you can find them.
 
+![Editor with the file tree and a note open](shots/editor.png)
+
 On the explorer row: **New note**, **New folder**, and **Save** on the left; **Delete** on the right. Right-click the tree for the same actions, plus **Rename**. F2 also renames.
 
 - New note and New folder land in the folder you selected, or in the same folder as the selected file. The new row’s name becomes an edit field (Enter to keep, Esc to cancel). Defaults are `untitled.md` and `New folder`.
@@ -89,6 +91,8 @@ Best,
 ## Preferences
 
 The top of the window is a wordmark: logo, snipperting, and the version (same as About).
+
+![Preferences with Bulk Edit folders expanded](shots/preferences.png)
 
 - **Data directory** — where the snippet files live. Browse opens a folder picker. Pick a folder and it is saved; Bulk Edit refreshes to match. Cancel leaves the path as it was.
 - **Show copied notice** — the small on-screen “copied” after a clipboard snippet (inject never shows it).

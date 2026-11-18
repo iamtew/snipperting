@@ -6,6 +6,18 @@ import (
 	"testing"
 )
 
+func TestManualHasShots(t *testing.T) {
+	b, err := os.ReadFile("MANUAL.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range []string{"shots/editor.png", "shots/preferences.png"} {
+		if !bytes.Contains(b, []byte(n)) {
+			t.Fatal(n)
+		}
+	}
+}
+
 func TestManualHTMLLoadsMarkdown(t *testing.T) {
 	b, err := os.ReadFile("manual.html")
 	if err != nil {

@@ -74,6 +74,14 @@ code {
   mask: var(--icon) no-repeat center / contain;
 }
 
+.sheet img:not(.logo) {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border: 2px solid var(--rule);
+  border-radius: 12px;
+}
+.home .shot { margin: 1.25rem 0 0; }
 .home .logo { display: block; width: 96px; height: 96px; }
 .home .gh {
   display: flex;
