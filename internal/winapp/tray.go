@@ -89,11 +89,15 @@ func uniqueRootName(dataDir, base string) string {
 func trayNew(cfg *config.Store) {
 	dataDir := cfg.Get().DataDir
 	name := uniqueRootName(dataDir, noteStampName(time.Now()))
-	if err := snippet.CreateFile(dataDir, name, GetClipboard()); err != nil {
+	body := GetClipboard()
+	if body == "" {
+		body = "\n"
+	}
+	if err := snippet.CreateFile(dataDir, name, body); err != nil {
 		Alert("Can't create that note.")
 		return
 	}
-	Open("editor", name)
+	queueOpen(openReq{kind: "editor", file: name, bodyEnd: true})
 }
 
 func addNodes(parent *systray.MenuItem, dataDir string, nodes []snippet.Node) {

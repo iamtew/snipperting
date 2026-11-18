@@ -129,7 +129,7 @@ require(["vs/editor/editor.main"], function () {
     showIdle();
   };
 
-  window.snipOpen = function (path, text, dark) {
+  window.snipOpen = function (path, text, dark, bodyEnd) {
     showMonaco();
     theme(dark);
     let m = models[path];
@@ -141,6 +141,13 @@ require(["vs/editor/editor.main"], function () {
       });
     }
     editor.setModel(m);
+    if (bodyEnd) {
+      const last = m.getLineCount();
+      const pos = { lineNumber: last, column: m.getLineMaxColumn(last) };
+      editor.setPosition(pos);
+      editor.revealPosition(pos);
+      editor.focus();
+    }
     paintStatus();
   };
 

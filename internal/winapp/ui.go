@@ -151,7 +151,10 @@ var (
 	appIconSm uintptr
 )
 
-type openReq struct{ kind, file string }
+type openReq struct {
+	kind, file string
+	bodyEnd    bool
+}
 
 type tnode struct {
 	path     string
@@ -289,6 +292,7 @@ type panel struct {
 	selFile    bool
 	curPath    string
 	pending    string
+	bodyEnd    bool
 	dropAfter  string
 	closing    bool
 	allowEdit    bool
@@ -332,8 +336,12 @@ func StartUI(cfg *config.Store, manual, version, rev string) {
 }
 
 func Open(kind, file string) {
+	queueOpen(openReq{kind: kind, file: file})
+}
+
+func queueOpen(r openReq) {
 	uiMu.Lock()
-	uiQueue = append(uiQueue, openReq{kind, file})
+	uiQueue = append(uiQueue, r)
 	h := uiHwnd
 	uiMu.Unlock()
 	if h != 0 {
@@ -435,11 +443,12 @@ func drain() {
 	uiQueue = nil
 	uiMu.Unlock()
 	for _, r := range q {
-		show(r.kind, r.file)
+		show(r)
 	}
 }
 
-func show(kind, file string) {
+func show(r openReq) {
+	kind, file := r.kind, r.file
 	if kind == "toast" {
 		showCopiedToast()
 		return
@@ -455,6 +464,7 @@ func show(kind, file string) {
 				p.dataDir = uiCfg.Get().DataDir
 				p.fillTree()
 				if file != "" {
+					p.bodyEnd = r.bodyEnd
 					p.loadFile(file)
 				}
 			}
@@ -469,7 +479,7 @@ func show(kind, file string) {
 	case "about":
 		openAbout()
 	case "editor":
-		openEditor(file)
+		openEditor(file, r.bodyEnd)
 	}
 }
 
@@ -834,8 +844,8 @@ func openAbout() {
 	p.clicks[gh] = func() { openURL(aboutRepo) }
 }
 
-func openEditor(file string) {
-	p := &panel{kind: "editor", clicks: map[uintptr]func(){}, dataDir: uiCfg.Get().DataDir, dirty: map[string]bool{}, on: map[uintptr]bool{}, glyph: map[uintptr]string{}, tipText: map[uintptr][]uint16{}}
+func openEditor(file string, bodyEnd bool) {
+	p := &panel{kind: "editor", clicks: map[uintptr]func(){}, dataDir: uiCfg.Get().DataDir, dirty: map[string]bool{}, on: map[uintptr]bool{}, glyph: map[uintptr]string{}, tipText: map[uintptr][]uint16{}, bodyEnd: bodyEnd}
 	p.hwnd = uintptr(frame("Editor", 1100, 720))
 	panels[p.hwnd] = p
 	p.tip = uintptr(create(p.hwnd, "tooltips_class32", "", wsPop|ttsAlways|ttsNoPrefix, 0, 0, 0, 0, 0))
@@ -1470,7 +1480,11 @@ func (p *panel) push() {
 	dark := monacoDark()
 	path, _ := json.Marshal(p.curPath)
 	if p.curPath != "" {
-		p.chrome.Eval(fmt.Sprintf("window.snipOpen&&window.snipOpen(%s,%s,%t)", string(path), string(b), dark))
+		p.chrome.Eval(fmt.Sprintf("window.snipOpen&&window.snipOpen(%s,%s,%t,%t)", string(path), string(b), dark, p.bodyEnd))
+		if p.bodyEnd {
+			focus(p.host)
+			p.bodyEnd = false
+		}
 		return
 	}
 	p.idlePane()
