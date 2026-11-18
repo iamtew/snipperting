@@ -79,6 +79,8 @@ Launched from the tray menu, it opens on the file tree. Save writes the `.md` fi
 
 ## Preferences
 Preferences is a native window where we configure Snipperting.
+It opens with a wordmark: app logo, name `snipperting`, and the same version string as About (tag `Version v…`, or Development build). No commit line, tagline, or Website/GitHub buttons.
+The clipboard-notice checkbox caption uses the same brand text color as other labels (not Windows system button text).
 Things to configure, starting out:
 - Data directory: Location.
 - Clipboard notice: on/off (default on).

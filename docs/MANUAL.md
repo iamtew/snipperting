@@ -84,6 +84,8 @@ Thanks for your time today. I will send notes after the call.
 
 ## Preferences
 
+The top of the window is a wordmark: logo, snipperting, and the version (same as About).
+
 - **Data directory** — where the snippet files live. Browse opens a folder picker. Pick a folder and it is saved; Bulk Edit refreshes to match. Cancel leaves the path as it was.
 - **Show copied notice** — the small on-screen “copied” after a clipboard snippet (inject never shows it).
 - **Theme** — System (follow Windows), Light, or Dark. It applies right away to snipperting’s windows, the editor, and Help.
