@@ -21,3 +21,15 @@ func TestCreateParent(t *testing.T) {
 		}
 	}
 }
+
+func TestPreviewTab(t *testing.T) {
+	if isPreview("note.md") || !isPreview(previewOf("note.md")) {
+		t.Fatal("isPreview")
+	}
+	if previewSource(previewOf("a/b.md")) != "a/b.md" {
+		t.Fatal("previewSource")
+	}
+	if tabTitle(previewOf("folder/note.md"), true) != "Preview · note.md" {
+		t.Fatal(tabTitle(previewOf("folder/note.md"), true))
+	}
+}

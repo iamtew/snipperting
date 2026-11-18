@@ -458,6 +458,8 @@ func reloadTheme() {
 		if p.chrome != nil && p.ready {
 			if p.kind == "help" {
 				p.showHelp()
+			} else if isPreview(p.curPath) {
+				p.refreshPreview()
 			} else {
 				p.push()
 			}

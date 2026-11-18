@@ -2,10 +2,27 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <style>html,body,#m{margin:0;height:100%;overflow:hidden}</style>
+  <style>
+html,body{margin:0;height:100%;overflow:hidden}
+#m{height:100%}
+#p{display:none;height:100%;overflow:auto;padding:1.5rem 1.75rem 3rem;box-sizing:border-box;font:16px/1.55 "Segoe UI",system-ui,sans-serif;background:#f3f3f3;color:#1a1a1a}
+#p.dark{background:#202020;color:#f3f3f3}
+#p h2{border-bottom:1px solid #5c5c5c;padding-bottom:.3rem}
+#p.dark h2{border-bottom-color:#b0b0b0}
+#p a{color:#0067c0}
+#p.dark a{color:#60cdff}
+#p code{font-family:Consolas,"Cascadia Code",monospace;background:#ececec;padding:.1em .35em;border-radius:4px;font-size:.9em}
+#p.dark code{background:#2b2b2b}
+#p pre{background:#ececec;padding:1rem;border-radius:8px;overflow:auto}
+#p.dark pre{background:#2b2b2b}
+#p pre code{background:none;padding:0}
+#p blockquote{margin:1rem 0;padding:.2rem 1rem;border-left:4px solid #0067c0;color:#5c5c5c}
+#p.dark blockquote{border-left-color:#60cdff;color:#b0b0b0}
+  </style>
 </head>
 <body>
 <div id="m"></div>
+<div id="p"></div>
 <script src="/vendor/monaco/loader.js" onerror="document.body.textContent='Monaco missing. Run: just vendor-monaco'"></script>
 <script>
 const vs = "/vendor/monaco";
@@ -42,7 +59,13 @@ require(["vs/editor/editor.main"], function () {
     monaco.editor.setTheme(dark ? "vs-dark" : "vs");
   }
 
+  function showMonaco() {
+    document.getElementById("p").style.display = "none";
+    document.getElementById("m").style.display = "block";
+  }
+
   window.snipOpen = function (path, text, dark) {
+    showMonaco();
     theme(dark);
     let m = models[path];
     if (!m) {
@@ -56,9 +79,24 @@ require(["vs/editor/editor.main"], function () {
   };
 
   window.snipSwitch = function (path, dark) {
+    showMonaco();
     if (dark === true || dark === false) theme(dark);
     const m = models[path];
     if (m) editor.setModel(m);
+  };
+
+  window.snipPreview = function (html, dark) {
+    theme(dark);
+    document.getElementById("m").style.display = "none";
+    const el = document.getElementById("p");
+    el.className = dark ? "dark" : "";
+    el.innerHTML = html || "";
+    el.style.display = "block";
+  };
+
+  window.snipPreviewAsk = function (path) {
+    const m = models[path];
+    window.chrome.webview.postMessage(JSON.stringify({ t: "preview", p: path, v: m ? m.getValue() : "" }));
   };
 
   window.snipClose = function (path) {
@@ -70,6 +108,7 @@ require(["vs/editor/editor.main"], function () {
   };
 
   window.snipSet = function (text, dark) {
+    showMonaco();
     theme(dark);
     editor.setValue(text || "");
   };
@@ -88,6 +127,7 @@ require(["vs/editor/editor.main"], function () {
   };
 
   window.snipFmt = function (kind) {
+    if (document.getElementById("p").style.display === "block") return true;
     const model = editor.getModel();
     if (!model) return true;
     const sel = editor.getSelection();

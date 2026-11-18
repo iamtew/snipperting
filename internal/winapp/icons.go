@@ -67,6 +67,9 @@ var icoCode []byte
 //go:embed icons/link.ico
 var icoLink []byte
 
+//go:embed icons/markdown.ico
+var icoMarkdown []byte
+
 //go:embed icons/trash.ico
 var icoTrash []byte
 
@@ -114,6 +117,8 @@ func chromeIcon(name string) []byte {
 		return icoCode
 	case "link":
 		return icoLink
+	case "markdown":
+		return icoMarkdown
 	case "trash":
 		return icoTrash
 	default:

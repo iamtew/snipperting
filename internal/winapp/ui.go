@@ -69,6 +69,7 @@ const (
 	tabH          = int32(28)
 	iconBtnS      = int32(32)
 	iconPx        = 24
+	previewPrefix = "preview:"
 
 	tcmInsert    = 0x133E
 	tcmSetCur    = 0x130C
@@ -739,6 +740,8 @@ func openEditor(file string) {
 		p.clicks[b] = func() { p.snipFmt(kind) }
 		x += 36
 	}
+	preview := p.iconBtn(p.hwnd, "Preview", "markdown", x, 4)
+	p.clicks[preview] = p.openPreview
 	p.tree = uintptr(create(p.hwnd, "SysTreeView32", "", wsChild|wsVis|tvsHasButtons|tvsShowSelAlways|tvsFullRowSelect, 8, barH, sideW, 640, 0))
 	explorerTheme(p.tree)
 	p.treeIcons()
@@ -770,6 +773,10 @@ func openEditor(file string) {
 			p.push()
 			return
 		}
+		if m.T == "preview" {
+			p.showPreviewHTML(snippet.Parse([]byte(m.V)).Body)
+			return
+		}
 		if m.T == "dirty" && m.P != "" {
 			p.dirty[m.P] = true
 			p.refreshTab(m.P)
@@ -777,7 +784,7 @@ func openEditor(file string) {
 		}
 		if m.T == "saveall" {
 			for _, f := range m.Files {
-				if f.P != "" {
+				if f.P != "" && !isPreview(f.P) {
 					_ = snippet.Write(p.dataDir, f.P, []byte(f.V))
 					p.dirty[f.P] = false
 					p.refreshTab(f.P)
@@ -793,7 +800,7 @@ func openEditor(file string) {
 			if rel == "" {
 				rel = p.curPath
 			}
-			if rel != "" {
+			if rel != "" && !isPreview(rel) {
 				_ = snippet.Write(p.dataDir, rel, []byte(m.V))
 				p.dirty[rel] = false
 				p.refreshTab(rel)
@@ -1052,8 +1059,74 @@ func (p *panel) loadFile(rel string) {
 	p.openPath(rel)
 }
 
+func isPreview(rel string) bool {
+	return strings.HasPrefix(rel, previewPrefix)
+}
+
+func previewOf(rel string) string {
+	return previewPrefix + rel
+}
+
+func previewSource(rel string) string {
+	return strings.TrimPrefix(rel, previewPrefix)
+}
+
+func (p *panel) openPreview() {
+	src := p.curPath
+	if src == "" {
+		return
+	}
+	if isPreview(src) {
+		p.refreshPreview()
+		return
+	}
+	prev := previewOf(src)
+	for i, t := range p.open {
+		if t == prev {
+			send(p.tabs, tcmSetCur, uintptr(i), 0)
+			p.activate(i)
+			return
+		}
+	}
+	p.open = append(p.open, prev)
+	p.insertTab(len(p.open)-1, tabTitle(prev, false))
+	send(p.tabs, tcmSetCur, uintptr(len(p.open)-1), 0)
+	p.activate(len(p.open) - 1)
+}
+
+func (p *panel) refreshPreview() {
+	if p.chrome == nil || !p.ready || !isPreview(p.curPath) {
+		return
+	}
+	src := previewSource(p.curPath)
+	for _, t := range p.open {
+		if t == src {
+			path, _ := json.Marshal(src)
+			p.chrome.Eval(fmt.Sprintf("window.snipPreviewAsk&&window.snipPreviewAsk(%s)", string(path)))
+			return
+		}
+	}
+	raw, err := snippet.Read(p.dataDir, src)
+	if err != nil {
+		return
+	}
+	p.showPreviewHTML(snippet.Parse(raw).Body)
+}
+
+func (p *panel) showPreviewHTML(body string) {
+	if p.chrome == nil || !p.ready {
+		return
+	}
+	h, _ := json.Marshal(mdhtml.HTML(body))
+	p.chrome.Eval(fmt.Sprintf("window.snipPreview&&window.snipPreview(%s,%t)", string(h), monacoDark()))
+}
+
 func (p *panel) push() {
 	if p.chrome == nil || !p.ready {
+		return
+	}
+	if isPreview(p.curPath) {
+		p.refreshPreview()
 		return
 	}
 	b, _ := json.Marshal(p.pending)
@@ -1067,7 +1140,7 @@ func (p *panel) push() {
 }
 
 func (p *panel) saveActive() {
-	if p.chrome != nil && p.curPath != "" {
+	if p.chrome != nil && p.curPath != "" && !isPreview(p.curPath) {
 		p.chrome.Eval(`window.snipGet&&window.snipGet()`)
 	}
 }
@@ -1126,6 +1199,11 @@ func (p *panel) activate(i int) {
 		return
 	}
 	p.curPath = p.open[i]
+	if isPreview(p.curPath) {
+		setText(p.hwnd, "Editor — Preview · "+previewSource(p.curPath))
+		p.refreshPreview()
+		return
+	}
 	setText(p.hwnd, "Editor — "+p.curPath)
 	if p.chrome == nil || !p.ready {
 		return
@@ -1160,7 +1238,7 @@ func (p *panel) closePath(rel string) {
 	p.removeTab(rel)
 }
 
-func (p *panel) removeTab(rel string) {
+func (p *panel) stripTab(rel string) {
 	idx := -1
 	for i, t := range p.open {
 		if t == rel {
@@ -1171,7 +1249,26 @@ func (p *panel) removeTab(rel string) {
 	if idx < 0 {
 		return
 	}
-	if p.chrome != nil && p.ready {
+	send(p.tabs, tcmDelete, uintptr(idx), 0)
+	p.open = append(p.open[:idx], p.open[idx+1:]...)
+	delete(p.dirty, rel)
+}
+
+func (p *panel) removeTab(rel string) {
+	if !isPreview(rel) {
+		p.stripTab(previewOf(rel))
+	}
+	idx := -1
+	for i, t := range p.open {
+		if t == rel {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return
+	}
+	if p.chrome != nil && p.ready && !isPreview(rel) {
 		path, _ := json.Marshal(rel)
 		p.chrome.Eval(fmt.Sprintf("window.snipClose&&window.snipClose(%s)", string(path)))
 	}
@@ -1210,6 +1307,9 @@ func (p *panel) refreshTab(rel string) {
 }
 
 func tabTitle(rel string, dirty bool) string {
+	if isPreview(rel) {
+		return "Preview · " + path.Base(filepath.ToSlash(previewSource(rel)))
+	}
 	name := path.Base(filepath.ToSlash(rel))
 	if dirty {
 		return "*" + name
@@ -1307,7 +1407,11 @@ func (p *panel) deleteSel() {
 	}
 	open := append([]string{}, p.open...)
 	for _, t := range open {
-		if t == rel || strings.HasPrefix(t, rel+"/") {
+		src := t
+		if isPreview(t) {
+			src = previewSource(t)
+		}
+		if src == rel || strings.HasPrefix(src, rel+"/") {
 			p.dirty[t] = false
 			p.removeTab(t)
 		}

@@ -30,4 +30,7 @@ func TestEditorHTMLHasWorker(t *testing.T) {
 	if !bytes.Contains(b, []byte("snipFmt")) {
 		t.Fatal("editor.html must expose snipFmt")
 	}
+	if !bytes.Contains(b, []byte("snipPreview")) {
+		t.Fatal("editor.html must expose snipPreview")
+	}
 }
