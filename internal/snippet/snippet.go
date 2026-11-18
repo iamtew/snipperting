@@ -198,7 +198,7 @@ func walkDir(root, rel string, n *Node) error {
 	dir := filepath.Join(root, filepath.FromSlash(rel))
 	ents, err := os.ReadDir(dir)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if os.IsNotExist(err) || rel != "" {
 			return nil
 		}
 		return err
@@ -222,7 +222,7 @@ func walkDir(root, rel string, n *Node) error {
 		}
 		raw, err := os.ReadFile(filepath.Join(dir, name))
 		if err != nil {
-			return err
+			continue
 		}
 		d := Parse(raw)
 		label := d.Meta.Label

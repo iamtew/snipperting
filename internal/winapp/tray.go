@@ -2,6 +2,7 @@ package winapp
 
 import (
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -10,6 +11,8 @@ import (
 	"snipperting/internal/config"
 	"snipperting/internal/snippet"
 )
+
+var lastMenuSig string
 
 func RunTray(icon []byte, cfg *config.Store) {
 	systray.Run(func() {
@@ -33,13 +36,28 @@ func RunTray(icon []byte, cfg *config.Store) {
 }
 
 func fillMenu(cfg *config.Store) {
-	systray.ResetMenu()
 	dataDir := cfg.Get().DataDir
 	tree, err := snippet.Walk(dataDir)
-	if err == nil {
-		snippet.OrderChildren(tree.Children, false)
-		addNodes(nil, dataDir, tree.Children)
+	if err != nil {
+		lastMenuSig = ""
+		systray.ResetMenu()
+		bad := systray.AddMenuItem("Can't read snippets", "")
+		bad.Disable()
+		addMenuFooter(cfg)
+		return
 	}
+	snippet.OrderChildren(tree.Children, false)
+	sig := dataDir + "\n" + nodeSig(tree)
+	if sig == lastMenuSig {
+		return
+	}
+	lastMenuSig = sig
+	systray.ResetMenu()
+	addNodes(nil, dataDir, tree.Children)
+	addMenuFooter(cfg)
+}
+
+func addMenuFooter(cfg *config.Store) {
 	systray.AddSeparator()
 	addNew(cfg)
 	addOpen("Edit", "editor")
@@ -49,6 +67,34 @@ func fillMenu(cfg *config.Store) {
 	quit := systray.AddMenuItem("Exit", "Quit snipperting")
 	quit.SetIcon(menuIcon("logout"))
 	quit.Click(func() { systray.Quit() })
+}
+
+func nodeSig(n snippet.Node) string {
+	var b strings.Builder
+	appendNodeSig(&b, n)
+	return b.String()
+}
+
+func appendNodeSig(b *strings.Builder, n snippet.Node) {
+	b.WriteString(n.Type)
+	b.WriteByte(0)
+	b.WriteString(n.Path)
+	b.WriteByte(0)
+	b.WriteString(n.Name)
+	b.WriteByte(0)
+	b.WriteString(n.Label)
+	b.WriteByte(0)
+	b.WriteString(n.About)
+	b.WriteByte(0)
+	b.WriteString(n.Action)
+	b.WriteByte(0)
+	b.WriteString(strconv.FormatBool(n.Enabled))
+	b.WriteByte(0)
+	b.WriteString(strconv.FormatBool(n.Hidden))
+	b.WriteByte('\n')
+	for _, c := range n.Children {
+		appendNodeSig(b, c)
+	}
 }
 
 func addNew(cfg *config.Store) {
