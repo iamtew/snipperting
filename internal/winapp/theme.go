@@ -438,7 +438,7 @@ func reloadTheme() {
 			colorEdit(p.dataEdit)
 		}
 		if p.clipCheck != 0 {
-			themeExplorer(p.clipCheck)
+			clearTheme(p.clipCheck)
 		}
 		invalidate(p.hwnd)
 		invalidate(p.bulk)

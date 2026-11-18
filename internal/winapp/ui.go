@@ -108,6 +108,10 @@ const (
 	iconGap       = int32(36)
 	iconPx        = 24
 	previewPrefix = "preview:"
+	ssIcon        = 0x0003
+	stmSetImage   = 0x0172
+	imageIcon     = 1
+	prefsBulkY    = int32(226)
 
 	tcmInsert    = 0x133E
 	tcmSetCur    = 0x130C
@@ -554,26 +558,27 @@ func openPrefs() {
 	p := &panel{kind: "prefs", clicks: map[uintptr]func(){}, opened: map[string]bool{}, on: map[uintptr]bool{}}
 	p.hwnd = uintptr(frame("Preferences", 720, 560))
 	panels[p.hwnd] = p
-	p.static(p.hwnd, "Data directory", 12, 12, 200, 18)
-	p.dataEdit = p.edit(p.hwnd, "", 12, 32, 580, 24, false)
+	placeWordmark(p.hwnd, 12, 12, 32)
+	p.static(p.hwnd, "Data directory", 12, 68, 200, 18)
+	p.dataEdit = p.edit(p.hwnd, "", 12, 88, 580, 24, false)
 	send(p.dataEdit, emSetReadOnly, 1, 0)
-	p.browse = p.button(p.hwnd, "Browse", 600, 30, 80, 26)
+	p.browse = p.button(p.hwnd, "Browse", 600, 86, 80, 26)
 	p.clicks[p.browse] = p.pickDataDir
-	p.clipCheck = uintptr(create(p.hwnd, "BUTTON", "Show copied notice", wsChild|wsVis|wsTab|bsAutoCheck, 12, 64, 220, 24, 0))
-	themeExplorer(p.clipCheck)
+	p.clipCheck = uintptr(create(p.hwnd, "BUTTON", "Show copied notice", wsChild|wsVis|wsTab|bsAutoCheck, 12, 120, 220, 24, 0))
+	clearTheme(p.clipCheck)
 	p.clicks[p.clipCheck] = p.saveClipNotice
-	p.static(p.hwnd, "Theme", 12, 94, 80, 18)
+	p.static(p.hwnd, "Theme", 12, 150, 80, 18)
 	p.themeSys = p.pushLike(p.hwnd, "System", false)
 	p.themeLight = p.pushLike(p.hwnd, "Light", false)
 	p.themeDark = p.pushLike(p.hwnd, "Dark", false)
-	move(p.themeSys, 12, 114, 80, 24)
-	move(p.themeLight, 96, 114, 80, 24)
-	move(p.themeDark, 180, 114, 80, 24)
+	move(p.themeSys, 12, 170, 80, 24)
+	move(p.themeLight, 96, 170, 80, 24)
+	move(p.themeDark, 180, 170, 80, 24)
 	p.clicks[p.themeSys] = func() { p.applyTheme("system") }
 	p.clicks[p.themeLight] = func() { p.applyTheme("light") }
 	p.clicks[p.themeDark] = func() { p.applyTheme("dark") }
-	p.static(p.hwnd, "Bulk Edit", 12, 148, 200, 18)
-	p.bulk = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsVScroll|wsClip, 0, 170, 704, 350, 0))
+	p.static(p.hwnd, "Bulk Edit", 12, 204, 200, 18)
+	p.bulk = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsVScroll|wsClip, 0, prefsBulkY, 704, 294, 0))
 	panels[p.bulk] = p
 	p.rebuildPrefs()
 }
@@ -821,20 +826,25 @@ func (p *panel) showHelp() {
 	p.chrome.NavigateToString(mdhtml.Page("Help", uiManual, monacoDark()))
 }
 
+func placeWordmark(parent uintptr, x, y, size int32) {
+	if ico := findIco(); ico != "" {
+		if h := loadIcoSize(ico, size, size); h != 0 {
+			st := uintptr(create(parent, "STATIC", "", wsChild|wsVis|ssIcon, x, y, size, size, 0))
+			send(st, stmSetImage, imageIcon, h)
+		}
+	}
+	tx := x + size + 16
+	ver, _ := aboutLines(uiVer, uiRev)
+	create(parent, "STATIC", "snipperting", wsChild|wsVis, tx, y, 300, 22, 0)
+	create(parent, "STATIC", ver, wsChild|wsVis, tx, y+22, 300, 20, 0)
+}
+
 func openAbout() {
 	p := &panel{kind: "about", clicks: map[uintptr]func(){}}
 	p.hwnd = uintptr(frame("About", 440, 300))
 	panels[p.hwnd] = p
-	if ico := findIco(); ico != "" {
-		if h := loadIco(ico); h != 0 {
-			st := uintptr(create(p.hwnd, "STATIC", "", wsChild|wsVis|0x0003, 24, 24, 64, 64, 0))
-			send(st, 0x0172, 1, h)
-		}
-	}
-	ver, rev := aboutLines(uiVer, uiRev)
-	p.static(p.hwnd, "snipperting", 104, 28, 300, 24)
-	p.static(p.hwnd, ver, 104, 52, 300, 20)
-	if rev != "" {
+	placeWordmark(p.hwnd, 24, 24, 64)
+	if _, rev := aboutLines(uiVer, uiRev); rev != "" {
 		p.static(p.hwnd, rev, 104, 74, 300, 20)
 	}
 	p.static(p.hwnd, "Snippets from the Windows tray.", 24, 110, 392, 40)
@@ -2081,13 +2091,13 @@ func (p *panel) onSize() {
 		}
 	case "prefs":
 		if p.dataEdit != 0 {
-			move(p.dataEdit, 12, 32, w-120, 24)
+			move(p.dataEdit, 12, 88, w-120, 24)
 		}
 		if p.browse != 0 {
-			move(p.browse, w-96, 30, 80, 26)
+			move(p.browse, w-96, 86, 80, 26)
 		}
 		if p.bulk != 0 {
-			move(p.bulk, 0, 170, w, h-170)
+			move(p.bulk, 0, prefsBulkY, w, h-prefsBulkY)
 			p.layoutBulk()
 		}
 	case "editor":

@@ -123,10 +123,6 @@ func moduleHandle() uintptr {
 	return h
 }
 
-func loadIco(path string) uintptr {
-	return loadIcoSize(path, 64, 64)
-}
-
 func loadIcoSize(path string, cx, cy int32) uintptr {
 	p, _ := windows.UTF16PtrFromString(path)
 	h, _, _ := pLoadImage.Call(0, uintptr(unsafe.Pointer(p)), 1, uintptr(cx), uintptr(cy), 0x10)
