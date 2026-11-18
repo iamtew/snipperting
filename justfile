@@ -23,6 +23,10 @@ build: docs-logo
 run: build
     dist/snipperting.exe
 
+# Preferences + Editor PNGs into build/shots (quit snipperting first)
+shots: build
+    powershell.exe -NoLogo -STA -File tools/shots.ps1
+
 # derive build/snipperting.ico from assets/logo.svg (original stays)
 icon:
     if (!(Test-Path build)) { New-Item -ItemType Directory build | Out-Null }
