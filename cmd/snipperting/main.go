@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"strings"
 
 	"snipperting/docs"
 	"snipperting/internal/config"
@@ -21,7 +22,31 @@ func main() {
 		fatal(err)
 	}
 	winapp.StartUI(cfg, docs.Manual, version, vcsRev())
+	prefs, edit, editFile := parseOpen(os.Args[1:])
+	if prefs {
+		winapp.Open("prefs", "")
+	}
+	if edit {
+		winapp.Open("editor", editFile)
+	}
 	winapp.RunTray(loadIcon(), cfg)
+}
+
+// parseOpen reads --prefs and --edit. A following arg that does not start with - is the note path.
+func parseOpen(args []string) (prefs, edit bool, editFile string) {
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--prefs":
+			prefs = true
+		case "--edit":
+			edit = true
+			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+				i++
+				editFile = args[i]
+			}
+		}
+	}
+	return
 }
 
 func vcsRev() string {
