@@ -15,6 +15,7 @@ import (
 	"golang.org/x/sys/windows"
 
 	"snipperting/internal/config"
+	"snipperting/internal/mdhtml"
 	"snipperting/internal/snippet"
 )
 
@@ -666,10 +667,29 @@ func openHelp() {
 	p := &panel{kind: "help", clicks: map[uintptr]func(){}}
 	p.hwnd = uintptr(frame("Help", 720, 640))
 	panels[p.hwnd] = p
-	ed := p.edit(p.hwnd, "", 8, 8, 688, 584, true)
-	setText(ed, uiManual)
-	send(ed, 0x00C5, 0x7ffffffe, 0)
-	p.dataEdit = ed
+	p.host = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsClip, 8, 8, 704, 624, 0))
+	p.chrome = edge.NewChromium()
+	if local := os.Getenv("LOCALAPPDATA"); local != "" {
+		p.chrome.DataPath = filepath.Join(local, "snipperting", "webview")
+	}
+	if !p.chrome.Embed(p.host) {
+		p.chrome = nil
+		ed := p.edit(p.hwnd, "", 8, 8, 688, 584, true)
+		setText(ed, uiManual)
+		send(ed, 0x00C5, 0x7ffffffe, 0)
+		p.dataEdit = ed
+		return
+	}
+	p.chrome.Resize()
+	p.ready = true
+	p.showHelp()
+}
+
+func (p *panel) showHelp() {
+	if p.chrome == nil {
+		return
+	}
+	p.chrome.NavigateToString(mdhtml.Page("Help", uiManual, monacoDark()))
 }
 
 func openAbout() {
@@ -1335,6 +1355,12 @@ func (p *panel) onSize() {
 	w, h := clientSize(p.hwnd)
 	switch p.kind {
 	case "help":
+		if p.host != 0 {
+			move(p.host, 8, 8, w-16, h-16)
+		}
+		if p.chrome != nil {
+			p.chrome.Resize()
+		}
 		if p.dataEdit != 0 {
 			move(p.dataEdit, 8, 8, w-16, h-16)
 		}

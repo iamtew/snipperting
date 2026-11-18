@@ -456,7 +456,11 @@ func reloadTheme() {
 		invalidate(p.tabs)
 		invalidate(p.tree)
 		if p.chrome != nil && p.ready {
-			p.push()
+			if p.kind == "help" {
+				p.showHelp()
+			} else {
+				p.push()
+			}
 		}
 	}
 }
