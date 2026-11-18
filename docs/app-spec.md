@@ -28,16 +28,18 @@ Available actions are:
 Subfolder opens a native submenu to the side.
 At each menu level, snippet files are listed first, then folders (submenus). Nested submenus use the same order. Then the footer separator.
 Footer items under a separator:
+- New
 - Edit
 - Preferences
 - Help
 - About
 - Exit
+New writes a `.md` in the data dir root named `note-` plus local `mmDD-HHMM` plus `.md` (month, day, 24h hour and minute; no colon, no year). Same-minute collision adds `-2` (then `-3`, …). The file has the default `----` header (clipboard, enabled, visible). If the clipboard has Unicode text, that text is the body; otherwise the body is empty. Then Edit opens that file. New uses the same Tabler `file-plus` icon as explorer New note.
 
 Edit, Preferences, Help, and About are native windows. They use the brand palette (no Windows accent): sky `#8ECAE6`, teal `#219EBC`, navy `#023047`, amber `#FFB703`, orange `#FB8500`. Light: bg sky, field/chip fill matches bg, text navy, muted/rule teal (border, not fill), accent orange, accent text navy. Dark: bg navy, field/chip fill matches bg, text sky, muted/rule teal (border, not fill), accent amber, accent text navy. Pressed native controls still fill accent. Theme is system / light / dark (default system, tracks Windows). Monaco and rendered markdown follow that same setting. GitHub Pages uses the same tokens (light default, dark via `prefers-color-scheme`). Edit's right pane is one WebView2: Monaco for note tabs, rendered HTML for a Preview tab. Help's content pane is WebView2 showing rendered MANUAL.md (`NavigateToString`). The snippet list itself is the native tray menu.
 About is a native window: app logo, name, Version (nearest git tag at build from `git describe --tags --abbrev=0`, prefixed with v), Commit (short hash, `-dirty` when the working tree was dirty at build), the tagline, and Website and GitHub buttons. Builds with no tags show Development build instead of a version. Website opens `https://iamtew.github.io/snipperting/` and GitHub opens `https://github.com/iamtew/snipperting` in the default browser.
 
-Tray items for snippets, folders, Edit, Preferences, and Help use vendored Tabler icons (rasterized to `.ico` for the native menu).
+Tray items for snippets, folders, New, Edit, Preferences, and Help use vendored Tabler icons (rasterized to `.ico` for the native menu).
 
 ## Data folder
 Snippets data is stored in plain text files, markdown, with .md file extension.
