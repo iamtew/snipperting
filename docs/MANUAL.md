@@ -41,7 +41,7 @@ Click the tray icon for a native Windows menu (no extra window).
 
 - Click a snippet to run its configured action (`clipboard` or `inject`)
 - Disabled snippets stay in the list but are grayed out
-- Folders open as submenus
+- Folders open as submenus and sit after snippet files at each menu level
 - Edit, Preferences, Help, About, Exit sit under a separator
 - Change action, enabled, or hidden in Preferences → Bulk Edit
 
@@ -49,14 +49,14 @@ Click the tray icon for a native Windows menu (no extra window).
 
 ## Editor
 
-Edit opens a native window. The file tree is native (all `.md` files and folders), with indent and file/folder icons. New note, New folder, and Delete are icon buttons on that explorer. New note and New folder land in the selected folder, or next to the selected file. Delete asks Yes/No, then removes the selected note or folder (folders include their contents). Tabs keep several notes open; close a tab with the × on the tab, or close the window. Unsaved notes prompt before discard. Ctrl+S saves the active tab; there is also a Save icon on the format bar. A markdown format bar wraps the selection (bold, italic, lists, code, link, and so on); click again to unwrap. Preview opens a second tab with the note body rendered as markdown (header omitted). The text area is Monaco inside that window. Save writes the `.md` file, header included. Monaco and preview follow the Preferences theme.
+Edit opens a native window. The file tree is native (all `.md` files and folders), with indent and file/folder icons. Folders are listed first, then files, at each indent level. New note, New folder, and Delete are icon buttons on that explorer. New note and New folder land in the selected folder, or next to the selected file. Delete asks Yes/No, then removes the selected note or folder (folders include their contents). Tabs keep several notes open; close a tab with the × on the tab, or close the window. Unsaved notes prompt before discard. Ctrl+S saves the active tab; there is also a Save icon on the format bar. A markdown format bar wraps the selection (bold, italic, lists, code, link, and so on); click again to unwrap. Preview opens a second tab with the note body rendered as markdown (header omitted). The text area is Monaco inside that window. Save writes the `.md` file, header included. Monaco and preview follow the Preferences theme.
 
 ## Preferences
 
 - **Data directory** — where snippets live. Browse opens a folder picker; picking a folder saves it
 - **Show copied notice** — on-screen indicator after a clipboard copy (default on)
 - **Theme** — System (follow Windows), Light, or Dark. Applies immediately.
-- **Bulk Edit** — rows list filenames. Inject vs Clipboard are two buttons; the pressed one is the current action. State and hidden stay on/off and shown/hidden.
+- **Bulk Edit** — rows list filenames. Folders sit after files at each indent level. Inject vs Clipboard are two buttons; the pressed one is the current action. State and hidden stay on/off and shown/hidden.
 
 ## Config
 

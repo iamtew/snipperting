@@ -26,6 +26,7 @@ Available actions are:
 - Enable/Disable - Gray out the snippet in the menu, it will be listed but can't be clicked (set in Bulk Edit)
 
 Subfolder opens a native submenu to the side.
+At each menu level, snippet files are listed first, then folders (submenus). Nested submenus use the same order. Then the footer separator.
 Footer items under a separator:
 - Edit
 - Preferences
@@ -60,7 +61,7 @@ Wow a snippet body, so fancy!
 ```
 
 ## Editor
-The editor is a native window. The file list is a native tree of the data dir (all `.md` files, including hidden, and empty folders). Folders nest with indent and Tabler file/folder icons, like a file explorer.
+The editor is a native window. The file list is a native tree of the data dir (all `.md` files, including hidden, and empty folders). Folders nest with indent and Tabler file/folder icons, like a file explorer. At each indent level, folders are listed first, then files.
 New note, New folder, and Delete are Tabler icon buttons on the explorer (not a window-wide text toolbar). New note and New folder use the selected folder, or the folder of the selected file. New note writes a `.md` with the default `----` header. Delete removes the selected note or folder after a native Yes/No confirm; a folder takes its contents with it. Open tabs for deleted paths close without a second save prompt.
 Native tabs keep several notes open. Each tab has a close control on the tab itself. Closing a dirty tab (or the window) prompts before discard. Ctrl+S saves the active tab. Save is also a Tabler icon on the markdown format bar.
 A native markdown format bar (save, bold, italic, strikethrough, heading, quote, lists, code, link, preview) wraps the Monaco selection. A second click of the same format control removes those markers. It does not live in the WebView.
@@ -96,7 +97,7 @@ Looks like a labeled list, and every row has:
   - action: two push-like buttons, Inject and Clipboard; the selected one is pressed
   - state: on/off
   - hidden: on/off
-Subfolders are displayed folded, can be unfolded to view items, are indented in display.
+Subfolders are displayed folded, can be unfolded to view items, are indented in display. At each indent level, snippet files are listed first, then folders (same grouping as the tray menu).
 Empty data dir shows an empty-state line.
 
 ## `./docs` folder, website and documentation
