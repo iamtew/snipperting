@@ -1,6 +1,6 @@
 # snipperting
 
-![snipperting](assets/logo.svg)
+![snipperting](docs/logo-sm.png)
 
 Windows tray snippets. Click a note to copy it, or inject it at the caret.
 

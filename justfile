@@ -32,9 +32,10 @@ icon:
     if (!(Test-Path build)) { New-Item -ItemType Directory build | Out-Null }
     go run ./tools/png2ico assets/logo.svg build/snipperting.ico
 
-# copy assets/logo.svg into docs/ for GitHub Pages (original stays)
+# copy assets/logo.svg into docs/ for GitHub Pages; 64px PNG for README (original stays)
 docs-logo:
     Copy-Item -Force assets/logo.svg docs/logo.svg
+    go run ./tools/png2ico assets/logo.svg docs/logo-sm.png
 
 # rasterize web/vendor/tabler/*.svg to 24px ico for tray and editor chrome
 tabler:
