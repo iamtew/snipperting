@@ -117,6 +117,25 @@ func TestCreateDirAndFile(t *testing.T) {
 	}
 }
 
+func TestParseActions(t *testing.T) {
+	d := Parse([]byte("----\naction: inject, clipboard\n----\nx\n"))
+	if d.Meta.Action != "inject, clipboard" {
+		t.Fatalf("both %q", d.Meta.Action)
+	}
+	d = Parse([]byte("----\naction:  CLIPBOARD , inject , inject , nope\n----\nx\n"))
+	if d.Meta.Action != "clipboard, inject" {
+		t.Fatalf("order junk %q", d.Meta.Action)
+	}
+	d = Parse([]byte("----\naction:\n----\nx\n"))
+	if d.Meta.Action != "clipboard" {
+		t.Fatalf("empty %q", d.Meta.Action)
+	}
+	got := Parse(Encode(Meta{Action: "inject, clipboard"}, "hi"))
+	if got.Meta.Action != "inject, clipboard" || got.Body != "hi\n" {
+		t.Fatalf("round %+v %q", got.Meta, got.Body)
+	}
+}
+
 func TestStateSynonyms(t *testing.T) {
 	d := Parse([]byte("----\nstate: off\nhidden: yes\n----\nx\n"))
 	if d.Meta.Enabled || !d.Meta.Hidden {

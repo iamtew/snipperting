@@ -13,7 +13,7 @@ const fence = "----"
 type Meta struct {
 	Label   string
 	About   string
-	Action  string // clipboard | inject
+	Action  string // clipboard and/or inject, comma-separated
 	Enabled bool
 	Hidden  bool
 }
@@ -70,9 +70,7 @@ func Parse(raw []byte) Doc {
 }
 
 func Encode(m Meta, body string) []byte {
-	if m.Action != "inject" {
-		m.Action = "clipboard"
-	}
+	m.Action = FormatActions(ParseActions(m.Action))
 	state := "disable"
 	if m.Enabled {
 		state = "enable"
@@ -106,6 +104,32 @@ func defaults() Meta {
 	return Meta{Action: "clipboard", Enabled: true}
 }
 
+// ParseActions splits a header action value. Known tokens: inject, clipboard.
+// Unknown dropped, duplicates collapsed (first-seen). Empty → clipboard.
+func ParseActions(s string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, p := range strings.Split(s, ",") {
+		p = strings.ToLower(strings.TrimSpace(p))
+		if p != "inject" && p != "clipboard" {
+			continue
+		}
+		if seen[p] {
+			continue
+		}
+		seen[p] = true
+		out = append(out, p)
+	}
+	if len(out) == 0 {
+		return []string{"clipboard"}
+	}
+	return out
+}
+
+func FormatActions(acts []string) string {
+	return strings.Join(ParseActions(strings.Join(acts, ",")), ", ")
+}
+
 func applyKV(m *Meta, k, v string) {
 	switch k {
 	case "label":
@@ -113,11 +137,7 @@ func applyKV(m *Meta, k, v string) {
 	case "about":
 		m.About = v
 	case "action":
-		if strings.EqualFold(v, "inject") {
-			m.Action = "inject"
-		} else {
-			m.Action = "clipboard"
-		}
+		m.Action = FormatActions(ParseActions(v))
 	case "state":
 		m.Enabled = parseOn(v, true)
 	case "hidden":
