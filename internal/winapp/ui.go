@@ -1757,6 +1757,13 @@ func leafName(s string) (string, bool) {
 	return s, true
 }
 
+func noteMD(name string) string {
+	if strings.EqualFold(filepath.Ext(name), ".md") {
+		return name
+	}
+	return name + ".md"
+}
+
 func joinRel(dir, name string) string {
 	if dir == "" {
 		return name
@@ -1890,8 +1897,8 @@ func (p *panel) queueTypedName(name string) {
 	if !ok {
 		return
 	}
-	if n.file && !strings.EqualFold(filepath.Ext(name), ".md") {
-		name = strings.TrimSuffix(name, filepath.Ext(name)) + ".md"
+	if n.file {
+		name = noteMD(name)
 	}
 	p.labelCreate = n.creating
 	p.labelFile = n.file
@@ -1946,8 +1953,8 @@ func (p *panel) finishEdit(lp uintptr) uintptr {
 		}
 		return 0
 	}
-	if n.file && !strings.EqualFold(filepath.Ext(name), ".md") {
-		name = strings.TrimSuffix(name, filepath.Ext(name)) + ".md"
+	if n.file {
+		name = noteMD(name)
 	}
 	p.labelCreate = n.creating
 	p.labelFile = n.file

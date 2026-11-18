@@ -427,7 +427,12 @@ func CreateFile(dataDir, rel, body string) error {
 	_, werr := f.Write(Encode(defaults(), body))
 	cerr := f.Close()
 	if werr != nil {
+		os.Remove(p)
 		return werr
 	}
-	return cerr
+	if cerr != nil {
+		os.Remove(p)
+		return cerr
+	}
+	return nil
 }

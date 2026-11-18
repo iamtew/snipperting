@@ -7,6 +7,18 @@ import (
 	"time"
 )
 
+func TestNoteMD(t *testing.T) {
+	if noteMD("hello") != "hello.md" {
+		t.Fatal("omit")
+	}
+	if noteMD("hello.md") != "hello.md" {
+		t.Fatal("keep")
+	}
+	if noteMD("keep.bak") != "keep.bak.md" {
+		t.Fatal("append")
+	}
+}
+
 func TestUniqueLeaf(t *testing.T) {
 	taken := map[string]bool{"untitled.md": true, "new folder": true}
 	if uniqueLeaf(taken, "note.md") != "note.md" {

@@ -4,6 +4,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/energye/systray"
@@ -12,7 +13,10 @@ import (
 	"snipperting/internal/snippet"
 )
 
-var lastMenuSig string
+var (
+	menuMu      sync.Mutex
+	lastMenuSig string
+)
 
 func RunTray(icon []byte, cfg *config.Store) {
 	systray.Run(func() {
@@ -36,6 +40,8 @@ func RunTray(icon []byte, cfg *config.Store) {
 }
 
 func fillMenu(cfg *config.Store) {
+	menuMu.Lock()
+	defer menuMu.Unlock()
 	dataDir := cfg.Get().DataDir
 	tree, err := snippet.Walk(dataDir)
 	if err != nil {
@@ -207,6 +213,7 @@ func fireSnippet(dataDir, rel, action string) {
 		copied = true
 	}
 	if copied {
+		cancelClipRestore()
 		NotifyCopied()
 	}
 }

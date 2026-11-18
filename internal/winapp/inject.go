@@ -34,7 +34,7 @@ var (
 )
 
 const (
-	fgWatchTimerID    = 1
+	fgWatchTimerID     = 1
 	clipRestoreTimerID = 2
 	clipRestoreMS      = 500
 )
@@ -158,6 +158,16 @@ func armClipRestore(prev string) {
 		return
 	}
 	procSetTimer.Call(h, clipRestoreTimerID, clipRestoreMS, 0)
+}
+
+func cancelClipRestore() {
+	if h := uiHwnd; h != 0 {
+		procKillTimer.Call(h, clipRestoreTimerID)
+	}
+	clipRestoreMu.Lock()
+	clipRestoreArmed = false
+	clipRestorePrev = ""
+	clipRestoreMu.Unlock()
 }
 
 func flushClipRestore() {

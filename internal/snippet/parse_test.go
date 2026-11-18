@@ -108,6 +108,16 @@ func TestCreateDirAndFile(t *testing.T) {
 	if err := CreateFile(dir, "notes/hello.md", ""); err != os.ErrExist {
 		t.Fatalf("exist %v", err)
 	}
+	if err := Write(dir, "notes/hello.md", []byte("second\n")); err != nil {
+		t.Fatal(err)
+	}
+	raw2, err := Read(dir, "notes/hello.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(raw2) != "second\n" {
+		t.Fatalf("overwrite %q", raw2)
+	}
 	if err := CreateFile(dir, "notes/keep.bak", ""); err != nil {
 		t.Fatal(err)
 	}
