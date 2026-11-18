@@ -33,7 +33,7 @@ Footer items under a separator:
 - About
 - Exit
 
-Edit, Preferences, Help, and About are native windows. They follow Windows light/dark and use Settings-like colors (system accent, flat chrome). Edit's right pane is the only WebView2 surface, and it only hosts Monaco. The snippet list itself is the native tray menu.
+Edit, Preferences, Help, and About are native windows. They use Settings-like colors (system accent, flat chrome). Theme is system / light / dark (default system, tracks Windows). Monaco follows that same setting. Edit's right pane is the only WebView2 surface, and it only hosts Monaco. The snippet list itself is the native tray menu.
 
 Tray items for snippets, folders, Edit, Preferences, and Help use vendored Tabler icons (rasterized to `.ico` for the native menu).
 
@@ -71,6 +71,7 @@ Preferences is a native window where we configure Snipperting.
 Things to configure, starting out:
 - Data directory: Location.
 - Clipboard notice: on/off (default on).
+- Theme: system / light / dark (default system).
 - Bulk Edit
 
 ### Data directory: 
@@ -78,6 +79,9 @@ Where all snippets are stored, default `~/.snipperting`
 
 ### Clipboard notice:
 When a snippet action copies to the clipboard, a small native on-screen notice says it was copied. It must not steal focus. Default on. A checkbox in Preferences enables or disables it. Inject does not show this notice.
+
+### Theme:
+Three push-like buttons: System, Light, Dark. The selected one is pressed. System follows Windows light/dark. Applies at once to native windows and Monaco. Stored as `theme` in config.json.
 
 ### Bulk Edit:
 Change things in bulk over multiple snippets. 
