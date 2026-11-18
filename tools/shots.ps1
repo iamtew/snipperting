@@ -117,6 +117,39 @@ while ($expanded -lt $maxExpand) {
     Start-Sleep -Milliseconds 400
 }
 
+$expandPat = [System.Windows.Automation.ExpandCollapsePattern]::Pattern
+$collapsedState = [System.Windows.Automation.ExpandCollapseState]::Collapsed
+$treeExpanded = 0
+while ($treeExpanded -lt $maxExpand) {
+    $editorHwnd = [ShotWin]::FindFrame('Editor')
+    if ($editorHwnd -eq [IntPtr]::Zero) { throw 'Editor closed' }
+    $ed = [System.Windows.Automation.AutomationElement]::FromHandle($editorHwnd)
+    $tree = $null
+    foreach ($el in $ed.FindAll($scopeDesc, [System.Windows.Automation.Condition]::TrueCondition)) {
+        if ($el.Current.ClassName -eq 'SysTreeView32') {
+            $tree = $el
+            break
+        }
+    }
+    if (-not $tree) { break }
+    $hit = $null
+    foreach ($el in $tree.FindAll($scopeDesc, [System.Windows.Automation.Condition]::TrueCondition)) {
+        try {
+            $pat = $el.GetCurrentPattern($expandPat)
+        } catch {
+            continue
+        }
+        if ($pat.Current.ExpandCollapseState -eq $collapsedState) {
+            $hit = $pat
+            break
+        }
+    }
+    if (-not $hit) { break }
+    $hit.Expand()
+    $treeExpanded++
+    Start-Sleep -Milliseconds 400
+}
+
 function Save-WindowShot([string]$titlePrefix, [string]$path) {
     $hwnd = [ShotWin]::FindFrame($titlePrefix)
     if ($hwnd -eq [IntPtr]::Zero) { throw "no $titlePrefix window" }
