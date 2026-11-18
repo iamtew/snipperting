@@ -2,13 +2,11 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 
 	"snipperting/docs"
 	"snipperting/internal/config"
-	"snipperting/internal/httpapi"
 	"snipperting/internal/winapp"
 )
 
@@ -22,18 +20,8 @@ func main() {
 	if err != nil {
 		fatal(err)
 	}
-	srv := httpapi.New(httpapi.FindWebRoot(), version)
-	ln, port, err := httpapi.Listen()
-	if err != nil {
-		fatal(err)
-	}
-	go func() {
-		if err := http.Serve(ln, srv); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-		}
-	}()
-	winapp.StartUI(cfg, port, docs.Manual, version)
-	winapp.RunTray(port, loadIcon(), cfg, func() { _ = ln.Close() })
+	winapp.StartUI(cfg, docs.Manual, version)
+	winapp.RunTray(loadIcon(), cfg)
 }
 
 func loadIcon() []byte {

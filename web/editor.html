@@ -6,9 +6,9 @@
 </head>
 <body>
 <div id="m"></div>
-<script src="/web/vendor/monaco/loader.js" onerror="document.body.textContent='Monaco missing. Run: just vendor-monaco'"></script>
+<script src="/vendor/monaco/loader.js" onerror="document.body.textContent='Monaco missing. Run: just vendor-monaco'"></script>
 <script>
-const vs = "/web/vendor/monaco";
+const vs = "/vendor/monaco";
 self.MonacoEnvironment = {
   getWorkerUrl: function () {
     const base = location.origin + vs;

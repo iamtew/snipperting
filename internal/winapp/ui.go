@@ -100,7 +100,6 @@ var (
 	uiHwnd   uintptr
 	uiQueue  []openReq
 	uiCfg    *config.Store
-	uiPort   int
 	uiManual string
 	uiVer    string
 	panels   = map[uintptr]*panel{}
@@ -233,10 +232,9 @@ type panel struct {
 	dataDir    string
 }
 
-func StartUI(cfg *config.Store, port int, manual, version string) {
+func StartUI(cfg *config.Store, manual, version string) {
 	uiOnce.Do(func() {
 		uiCfg = cfg
-		uiPort = port
 		uiManual = manual
 		uiVer = version
 		ready := make(chan struct{})
@@ -790,15 +788,32 @@ func openEditor(file string) {
 		}
 	}
 	if !p.chrome.Embed(p.host) {
-		p.static(p.host, "WebView2 failed to start.", 8, 8, 400, 24)
-		p.chrome = nil
+		p.webViewFail()
+		return
+	}
+	root := findWebRoot()
+	wv3 := p.chrome.GetICoreWebView2_3()
+	if root == "" || wv3 == nil {
+		p.webViewFail()
+		return
+	}
+	if err := wv3.SetVirtualHostNameToFolderMapping(editorHost, root, edge.COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_ALLOW); err != nil {
+		p.webViewFail()
 		return
 	}
 	p.chrome.Resize()
-	p.chrome.Navigate(fmt.Sprintf("http://127.0.0.1:%d/editor?v=%s", uiPort, uiVer))
+	p.chrome.Navigate(fmt.Sprintf("https://%s/editor.html?v=%s", editorHost, uiVer))
 	if file != "" {
 		p.loadFile(file)
 	}
+}
+
+func (p *panel) webViewFail() {
+	if p.chrome != nil {
+		_ = p.chrome.Hide()
+	}
+	p.static(p.host, "WebView2 failed to start.", 8, 8, 400, 24)
+	p.chrome = nil
 }
 
 func (p *panel) fillTree() {

@@ -9,8 +9,7 @@ import (
 	"snipperting/internal/snippet"
 )
 
-func RunTray(port int, icon []byte, cfg *config.Store, onExit func()) {
-	_ = port
+func RunTray(icon []byte, cfg *config.Store) {
 	systray.Run(func() {
 		if len(icon) > 0 {
 			systray.SetIcon(icon)
@@ -26,9 +25,6 @@ func RunTray(port int, icon []byte, cfg *config.Store, onExit func()) {
 		systray.SetOnClick(openNative)
 		systray.SetOnRClick(openNative)
 	}, func() {
-		if onExit != nil {
-			onExit()
-		}
 		os.Exit(0)
 	})
 }
