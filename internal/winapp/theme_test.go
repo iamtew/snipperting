@@ -21,7 +21,7 @@ func TestThemeLayout(t *testing.T) {
 		t.Fatalf("drawItem size %d", n)
 	}
 	loadPalette()
-	if uiPal.bgBrush == 0 || uiPal.fieldBrush == 0 || uiPal.accBrush == 0 {
+	if uiPal.bgBrush == 0 || uiPal.fieldBrush == 0 || uiPal.accBrush == 0 || uiPal.ruleBrush == 0 {
 		t.Fatal("palette brushes")
 	}
 	if messageFont() == 0 {
@@ -70,12 +70,12 @@ func TestLoadPaletteBrand(t *testing.T) {
 	navy, sky, teal := rgb(0x02, 0x30, 0x47), rgb(0x8e, 0xca, 0xe6), rgb(0x21, 0x9e, 0xbc)
 	_ = s.Set(config.File{DataDir: dir, Theme: "light", ClipNotice: true})
 	loadPalette()
-	if uiPal.bg != sky || uiPal.field != teal || uiPal.text != navy || uiPal.accent != rgb(0xfb, 0x85, 0x00) || uiPal.accentText != navy {
+	if uiPal.bg != sky || uiPal.field != sky || uiPal.rule != teal || uiPal.text != navy || uiPal.accent != rgb(0xfb, 0x85, 0x00) || uiPal.accentText != navy {
 		t.Fatalf("light %#v", uiPal)
 	}
 	_ = s.Set(config.File{DataDir: dir, Theme: "dark", ClipNotice: true})
 	loadPalette()
-	if uiPal.bg != navy || uiPal.field != teal || uiPal.text != sky || uiPal.accent != rgb(0xff, 0xb7, 0x03) || uiPal.accentText != navy {
+	if uiPal.bg != navy || uiPal.field != navy || uiPal.rule != teal || uiPal.text != sky || uiPal.accent != rgb(0xff, 0xb7, 0x03) || uiPal.accentText != navy {
 		t.Fatalf("dark %#v", uiPal)
 	}
 }

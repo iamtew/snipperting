@@ -63,6 +63,7 @@ var (
 	pSelect       = g32.NewProc("SelectObject")
 	pSetDPI       = u32.NewProc("SetProcessDpiAwarenessContext")
 	pFillRect     = u32.NewProc("FillRect")
+	pFrameRect    = u32.NewProc("FrameRect")
 	pDrawText     = u32.NewProc("DrawTextW")
 	pCreateDIB    = g32.NewProc("CreateDIBSection")
 	pCreateDC     = g32.NewProc("CreateCompatibleDC")
@@ -137,10 +138,10 @@ type drawItem struct {
 }
 
 type palette struct {
-	dark                          bool
-	bg, field, text, accent       uint32
-	bgBrush, fieldBrush, accBrush uintptr
-	accentText                    uint32
+	dark                                     bool
+	bg, field, text, accent, rule            uint32
+	bgBrush, fieldBrush, accBrush, ruleBrush uintptr
+	accentText                               uint32
 }
 
 var uiPal palette
@@ -226,9 +227,10 @@ func loadPalette() {
 		pDeleteObj.Call(uiPal.bgBrush)
 		pDeleteObj.Call(uiPal.fieldBrush)
 		pDeleteObj.Call(uiPal.accBrush)
+		pDeleteObj.Call(uiPal.ruleBrush)
 	}
 	uiPal.dark = wantDark()
-	uiPal.field = rgb(0x21, 0x9e, 0xbc)
+	uiPal.rule = rgb(0x21, 0x9e, 0xbc)
 	uiPal.accentText = rgb(0x02, 0x30, 0x47)
 	if uiPal.dark {
 		uiPal.bg = rgb(0x02, 0x30, 0x47)
@@ -239,9 +241,11 @@ func loadPalette() {
 		uiPal.text = rgb(0x02, 0x30, 0x47)
 		uiPal.accent = rgb(0xfb, 0x85, 0x00)
 	}
+	uiPal.field = uiPal.bg
 	uiPal.bgBrush, _, _ = pCreateBrush.Call(uintptr(uiPal.bg))
 	uiPal.fieldBrush, _, _ = pCreateBrush.Call(uintptr(uiPal.field))
 	uiPal.accBrush, _, _ = pCreateBrush.Call(uintptr(uiPal.accent))
+	uiPal.ruleBrush, _, _ = pCreateBrush.Call(uintptr(uiPal.rule))
 }
 
 func classBrush() uintptr {
@@ -356,6 +360,9 @@ func paintOwned(parent, lp uintptr) {
 		brush, fg = uiPal.accBrush, uiPal.accentText
 	}
 	pFillRect.Call(di.hdc, uintptr(unsafe.Pointer(&di.rc)), brush)
+	if !on && glyph == "" && uiPal.ruleBrush != 0 {
+		pFrameRect.Call(di.hdc, uintptr(unsafe.Pointer(&di.rc)), uiPal.ruleBrush)
+	}
 	if glyph != "" {
 		drawGlyph(di.hdc, glyph, di.rc)
 		return
@@ -376,6 +383,9 @@ func paintTab(di *drawItem) {
 		brush = uiPal.fieldBrush
 	}
 	pFillRect.Call(di.hdc, uintptr(unsafe.Pointer(&di.rc)), brush)
+	if uiPal.ruleBrush != 0 {
+		pFrameRect.Call(di.hdc, uintptr(unsafe.Pointer(&di.rc)), uiPal.ruleBrush)
+	}
 	if sel {
 		bar := di.rc
 		bar.top = bar.bottom - 2
