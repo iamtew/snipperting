@@ -3,7 +3,7 @@
 Windows SysTray snippets app. Spec is the Bible: [docs/app-spec.md](docs/app-spec.md). App and spec stay in line. Changes not in the spec need a spec update first (Clanker can draft it).
 
 - **Logo:** [assets/logo.png](assets/logo.png) is Meat Bag owned. Never modify it or `assets/logo.af`. Copy/derive only via Just (`just icon`, `just docs-logo`).
-- **Stack:** Go 1.26, Just. No HTTP server. WebView2 maps `web/` to `https://snipperting.example/` for Monaco. Tray, prefs, help, and about are native. WebView2 is a child of the editor window and only hosts Monaco. No Wails.
+- **Stack:** Go 1.26, Just. No HTTP server. WebView2 maps `web/` to `https://snipperting.example/` for Monaco. Tray, prefs, help, and about are native. Editor WebView2 hosts Monaco and preview HTML. Help WebView2 shows rendered MANUAL.md via NavigateToString. No Wails.
 - **Config:** `config.json` next to the executable, created on first start. Not shipped. Keys: `dataDir` (default `~/.snipperting`), `clipNotice` (bool, default true), `theme` (`system` / `light` / `dark`, default `system`). Native windows and Monaco follow `theme`.
 - **Data:** Markdown files with optional `----` header (`label`, `about`, `action`, `state`, `hidden`). Subfolders = menu categories. Read and written natively.
 - **Verify:** `just test`. After `just run`, one tray process (named mutex); no TCP on 45690–45699.

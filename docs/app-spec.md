@@ -33,7 +33,7 @@ Footer items under a separator:
 - About
 - Exit
 
-Edit, Preferences, Help, and About are native windows. They use Settings-like colors (system accent, flat chrome). Theme is system / light / dark (default system, tracks Windows). Monaco follows that same setting. Edit's right pane is the only WebView2 surface, and it only hosts Monaco. The snippet list itself is the native tray menu.
+Edit, Preferences, Help, and About are native windows. They use Settings-like colors (system accent, flat chrome). Theme is system / light / dark (default system, tracks Windows). Monaco and rendered markdown follow that same setting. Edit's right pane is one WebView2: Monaco for note tabs, rendered HTML for a Preview tab. Help's content pane is WebView2 showing rendered MANUAL.md (`NavigateToString`, no HTTP). The snippet list itself is the native tray menu.
 
 Tray items for snippets, folders, Edit, Preferences, and Help use vendored Tabler icons (rasterized to `.ico` for the native menu).
 
@@ -63,8 +63,9 @@ Wow a snippet body, so fancy!
 The editor is a native window. The file list is a native tree of the data dir (all `.md` files, including hidden, and empty folders). Folders nest with indent and Tabler file/folder icons, like a file explorer.
 New note, New folder, and Delete are Tabler icon buttons on the explorer (not a window-wide text toolbar). New note and New folder use the selected folder, or the folder of the selected file. New note writes a `.md` with the default `----` header. Delete removes the selected note or folder after a native Yes/No confirm; a folder takes its contents with it. Open tabs for deleted paths close without a second save prompt.
 Native tabs keep several notes open. Each tab has a close control on the tab itself. Closing a dirty tab (or the window) prompts before discard. Ctrl+S saves the active tab. Save is also a Tabler icon on the markdown format bar.
-A native markdown format bar (save, bold, italic, strikethrough, heading, quote, lists, code, link) wraps the Monaco selection. A second click of the same format control removes those markers. It does not live in the WebView.
-The text pane is one Monaco (full Markdown) hosted as a child of that window, not a separate browser window and not the system browser. Monaco follows the Preferences theme.
+A native markdown format bar (save, bold, italic, strikethrough, heading, quote, lists, code, link, preview) wraps the Monaco selection. A second click of the same format control removes those markers. It does not live in the WebView.
+Preview opens a native tab (title like `Preview · note.md`) that shows the current buffer rendered as markdown in the same WebView. The snippet `----` header is omitted, same body as inject/clipboard. The preview tab is never dirty and is not written to disk. Closing the note closes its preview. Switching back to the note tab restores Monaco. Not a system browser.
+The text pane is one WebView2 child of that window. Monaco follows the Preferences theme; preview HTML does too.
 Launched from the tray menu, it opens on the file tree. Save writes the `.md` file, header included.
 
 ## Preferences
@@ -102,5 +103,5 @@ Empty data dir shows an empty-state line.
 The `./docs` folder shall contain a website for GitHub pages.
 Think product page, explaining the application. 
 Also on this page, users can read the manual, MANUAL.md.
-The manual shall also be shipped inside snipperting executable and be possible to viewed by user under Help menu item.
+The manual shall also be shipped inside snipperting executable and be possible to viewed by user under Help menu item. Help renders MANUAL.md (not source) with a table of contents at the top whose links jump to heading anchors.
 

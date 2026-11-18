@@ -6,7 +6,7 @@ snipperting keeps text snippets in Markdown files and serves them from the Windo
 
 Install into `%LOCALAPPDATA%\snipperting`. Start snipperting from the Start Menu shortcut.
 
-The editor loads Monaco inside WebView2 from files next to the app. There is no HTTP server. Preferences, help, and about are native windows.
+The editor loads Monaco inside WebView2 from files next to the app. There is no HTTP server. Preferences, Help, and About are native windows. Help shows this manual rendered as markdown, with a table of contents at the top.
 
 ## Data folder
 
@@ -49,7 +49,7 @@ Click the tray icon for a native Windows menu (no extra window).
 
 ## Editor
 
-Edit opens a native window. The file tree is native (all `.md` files and folders), with indent and file/folder icons. New note, New folder, and Delete are icon buttons on that explorer. New note and New folder land in the selected folder, or next to the selected file. Delete asks Yes/No, then removes the selected note or folder (folders include their contents). Tabs keep several notes open; close a tab with the × on the tab, or close the window. Unsaved notes prompt before discard. Ctrl+S saves the active tab; there is also a Save icon on the format bar. A markdown format bar wraps the selection (bold, italic, lists, code, link, and so on); click again to unwrap. The text area is Monaco inside that window. Save writes the `.md` file, header included. Monaco follows the Preferences theme.
+Edit opens a native window. The file tree is native (all `.md` files and folders), with indent and file/folder icons. New note, New folder, and Delete are icon buttons on that explorer. New note and New folder land in the selected folder, or next to the selected file. Delete asks Yes/No, then removes the selected note or folder (folders include their contents). Tabs keep several notes open; close a tab with the × on the tab, or close the window. Unsaved notes prompt before discard. Ctrl+S saves the active tab; there is also a Save icon on the format bar. A markdown format bar wraps the selection (bold, italic, lists, code, link, and so on); click again to unwrap. Preview opens a second tab with the note body rendered as markdown (header omitted). The text area is Monaco inside that window. Save writes the `.md` file, header included. Monaco and preview follow the Preferences theme.
 
 ## Preferences
 
