@@ -1,6 +1,11 @@
 package winapp
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+)
 
 func TestUniqueLeaf(t *testing.T) {
 	taken := map[string]bool{"untitled.md": true, "new folder": true}
@@ -12,6 +17,26 @@ func TestUniqueLeaf(t *testing.T) {
 	}
 	if uniqueLeaf(taken, "New folder") != "New folder-2" {
 		t.Fatal("dir")
+	}
+}
+
+func TestNoteStampName(t *testing.T) {
+	tm := time.Date(2026, 11, 18, 21, 39, 0, 0, time.Local)
+	if got := noteStampName(tm); got != "note-1118-2139.md" {
+		t.Fatal(got)
+	}
+}
+
+func TestUniqueRootName(t *testing.T) {
+	dir := t.TempDir()
+	if uniqueRootName(dir, "note-1118-2139.md") != "note-1118-2139.md" {
+		t.Fatal("free")
+	}
+	if err := os.WriteFile(filepath.Join(dir, "note-1118-2139.md"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := uniqueRootName(dir, "note-1118-2139.md"); got != "note-1118-2139-2.md" {
+		t.Fatal(got)
 	}
 }
 

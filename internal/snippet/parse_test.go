@@ -86,13 +86,13 @@ func TestCreateDirAndFile(t *testing.T) {
 	if err := CreateDir(dir, "notes"); err != nil {
 		t.Fatal(err)
 	}
-	if err := CreateFile(dir, "notes/hello"); err != nil {
+	if err := CreateFile(dir, "notes/hello", ""); err != nil {
 		t.Fatal(err)
 	}
-	if err := CreateFile(dir, "notes/hello.md"); err != os.ErrExist {
+	if err := CreateFile(dir, "notes/hello.md", ""); err != os.ErrExist {
 		t.Fatalf("exist %v", err)
 	}
-	if err := CreateFile(dir, "../nope.md"); err == nil {
+	if err := CreateFile(dir, "../nope.md", ""); err == nil {
 		t.Fatal("expected reject")
 	}
 	raw, err := Read(dir, "notes/hello.md")

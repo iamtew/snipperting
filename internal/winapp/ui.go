@@ -1915,7 +1915,7 @@ func (p *panel) applyLabel(cancel bool) {
 		}
 		var err error
 		if file {
-			err = snippet.CreateFile(p.dataDir, dest)
+			err = snippet.CreateFile(p.dataDir, dest, "")
 		} else {
 			err = snippet.CreateDir(p.dataDir, dest)
 		}

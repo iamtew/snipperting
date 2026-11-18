@@ -341,7 +341,7 @@ func Move(dataDir, srcRel, destRel string) error {
 	return os.Rename(src, dest)
 }
 
-func CreateFile(dataDir, rel string) error {
+func CreateFile(dataDir, rel, body string) error {
 	if !strings.EqualFold(filepath.Ext(rel), ".md") {
 		rel = strings.TrimSuffix(rel, filepath.Ext(rel)) + ".md"
 	}
@@ -352,5 +352,5 @@ func CreateFile(dataDir, rel string) error {
 	if _, err := os.Stat(p); err == nil {
 		return os.ErrExist
 	}
-	return Write(dataDir, rel, Encode(defaults(), ""))
+	return Write(dataDir, rel, Encode(defaults(), body))
 }

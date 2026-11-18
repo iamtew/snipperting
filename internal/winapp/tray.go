@@ -2,6 +2,8 @@ package winapp
 
 import (
 	"os"
+	"strings"
+	"time"
 
 	"github.com/energye/systray"
 
@@ -38,12 +40,19 @@ func fillMenu(cfg *config.Store) {
 		addNodes(nil, dataDir, tree.Children)
 	}
 	systray.AddSeparator()
+	addNew(cfg)
 	addOpen("Edit", "editor")
 	addOpen("Preferences", "prefs")
 	addOpen("Help", "help")
 	addOpen("About", "about")
 	quit := systray.AddMenuItem("Exit", "Quit snipperting")
 	quit.Click(func() { systray.Quit() })
+}
+
+func addNew(cfg *config.Store) {
+	it := systray.AddMenuItem("New", "")
+	it.SetIcon(menuIcon("file-plus"))
+	it.Click(func() { trayNew(cfg) })
 }
 
 func addOpen(title, kind string) {
@@ -57,6 +66,31 @@ func addOpen(title, kind string) {
 		it.SetIcon(menuIcon("help"))
 	}
 	it.Click(func() { Open(kind, "") })
+}
+
+func noteStampName(t time.Time) string {
+	return "note-" + t.Format("0102-1504") + ".md"
+}
+
+func uniqueRootName(dataDir, base string) string {
+	taken := map[string]bool{}
+	ents, err := os.ReadDir(dataDir)
+	if err == nil {
+		for _, e := range ents {
+			taken[strings.ToLower(e.Name())] = true
+		}
+	}
+	return uniqueLeaf(taken, base)
+}
+
+func trayNew(cfg *config.Store) {
+	dataDir := cfg.Get().DataDir
+	name := uniqueRootName(dataDir, noteStampName(time.Now()))
+	if err := snippet.CreateFile(dataDir, name, GetClipboard()); err != nil {
+		Alert("Can't create that note.")
+		return
+	}
+	Open("editor", name)
 }
 
 func addNodes(parent *systray.MenuItem, dataDir string, nodes []snippet.Node) {

@@ -9,7 +9,7 @@ import (
 
 func TestMoveFile(t *testing.T) {
 	dir := t.TempDir()
-	if err := CreateFile(dir, "a.md"); err != nil {
+	if err := CreateFile(dir, "a.md", ""); err != nil {
 		t.Fatal(err)
 	}
 	if err := CreateDir(dir, "sub"); err != nil {
@@ -31,10 +31,10 @@ func TestMoveRejects(t *testing.T) {
 	if err := CreateDir(dir, "a"); err != nil {
 		t.Fatal(err)
 	}
-	if err := CreateFile(dir, "a/n.md"); err != nil {
+	if err := CreateFile(dir, "a/n.md", ""); err != nil {
 		t.Fatal(err)
 	}
-	if err := CreateFile(dir, "b.md"); err != nil {
+	if err := CreateFile(dir, "b.md", ""); err != nil {
 		t.Fatal(err)
 	}
 	if err := Move(dir, "a", "a/x"); !errors.Is(err, os.ErrInvalid) {
