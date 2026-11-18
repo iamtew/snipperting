@@ -69,6 +69,12 @@ func TestLabelEnterRenamesFile(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "old.md"), []byte("x\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(dir, "sib-a.md"), []byte("a\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "sib-b.md"), []byte("b\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	hwnd := frame("label-rename", 420, 360)
 	p := &panel{
 		kind:    "editor",
@@ -112,6 +118,11 @@ func TestLabelEnterRenamesFile(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "old.md")); !os.IsNotExist(err) {
 		t.Fatal("old name still on disk")
+	}
+	for _, tpath := range p.open {
+		if tpath == "sib-a.md" || tpath == "sib-b.md" {
+			t.Fatalf("rename opened sibling notes: %v", p.open)
+		}
 	}
 }
 

@@ -301,6 +301,7 @@ type panel struct {
 	labelTyped    string
 	labelEscaped  bool
 	labelQueued   bool
+	filling       bool
 	dragging   bool
 	dragPath   string
 	ready      bool
@@ -947,16 +948,19 @@ func (p *panel) fillTree() {
 	if p.tree == 0 {
 		return
 	}
+	p.filling = true
 	keep := p.selPath
 	send(p.tree, tvmDelete, 0, tviRoot)
 	p.nodes = nil
 	tree, err := snippet.Walk(p.dataDir)
 	if err != nil {
+		p.filling = false
 		return
 	}
 	snippet.OrderChildren(tree.Children, true)
 	p.addTree(tviRoot, tree.Children)
 	p.selectTree(keep)
+	p.filling = false
 }
 
 func (p *panel) addTree(parent uintptr, nodes []snippet.Node) {
@@ -1204,7 +1208,7 @@ func (p *panel) onNotify(lp uintptr) uintptr {
 	n := p.nodes[i]
 	p.selPath = n.path
 	p.selFile = n.file
-	if n.file && !n.creating {
+	if n.file && !n.creating && !p.filling {
 		p.openPath(n.path)
 	}
 	return 0
