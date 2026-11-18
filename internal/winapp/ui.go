@@ -65,12 +65,21 @@ const (
 	tviRoot       = ^uintptr(0xFFFF) // (HTREEITEM)-0x10000
 	tvmInsert     = 0x1132
 	tvmDelete     = 0x1101
-	tvmSelectItem = 0x110B
-	tvgnCaret     = 9
-	tvifIcon      = 0x0027       // TEXT|IMAGE|SELECTEDIMAGE|PARAM
-	tvnSelChanged = ^uint32(450) // TVN_SELCHANGEDW = -451
-	tvnBeginDrag  = ^uint32(455) // TVN_BEGINDRAGW = -456
-	nmRClick      = ^uint32(4)   // NM_RCLICK = -5
+	tvmSelectItem   = 0x110B
+	tvmEditLabel    = 0x1141
+	tvmGetEdit      = 0x110F
+	tvmExpand       = 0x1102
+	tveExpand       = 2
+	tvgnCaret       = 9
+	tvifIcon        = 0x0027       // TEXT|IMAGE|SELECTEDIMAGE|PARAM
+	tvnSelChanged   = ^uint32(450) // TVN_SELCHANGEDW = -451
+	tvnBeginDrag    = ^uint32(455) // TVN_BEGINDRAGW = -456
+	tvnBeginLabel   = ^uint32(458) // TVN_BEGINLABELEDITW = -459
+	tvnEndLabel     = ^uint32(460) // TVN_ENDLABELEDITW = -461
+	tvnKeyDown      = ^uint32(411) // TVN_KEYDOWN = -412
+	nmRClick        = ^uint32(4)   // NM_RCLICK = -5
+	emSetSel        = 0x00B1
+	vkF2            = 0x71
 	tvmHitTest    = 0x1111
 	tvgnDrop      = 8
 	tpmReturnCmd  = 0x0100
@@ -136,9 +145,10 @@ var (
 type openReq struct{ kind, file string }
 
 type tnode struct {
-	path string
-	file bool
-	item uintptr
+	path     string
+	file     bool
+	item     uintptr
+	creating bool
 }
 
 type placed struct {
@@ -193,6 +203,17 @@ type tcitem struct {
 
 type tchit struct {
 	x, y  int32
+	flags uint32
+}
+
+type nmdisp struct {
+	hdr  nmhdr
+	item tvitem
+}
+
+type nmtvkey struct {
+	hdr   nmhdr
+	wVKey uint16
 	flags uint32
 }
 
@@ -257,8 +278,8 @@ type panel struct {
 	pending    string
 	dropAfter  string
 	closing    bool
-	promptOK   bool
-	promptDone bool
+	allowEdit  bool
+	msgResult  uintptr
 	dragging   bool
 	dragPath   string
 	ready      bool
@@ -378,8 +399,9 @@ func wndProc(hwnd, msg, wp, lp uintptr) uintptr {
 		return 0
 	}
 	if p := panels[hwnd]; p != nil {
+		p.msgResult = 0
 		if p.onMsg(hwnd, msg, wp, lp) {
-			return 0
+			return p.msgResult
 		}
 	}
 	return defWnd(hwnd, msg, wp, lp)
@@ -438,7 +460,7 @@ func (p *panel) onMsg(hwnd, msg, wp, lp uintptr) bool {
 		}
 	case wmNotify:
 		if p.kind == "editor" {
-			p.onNotify(lp)
+			p.msgResult = p.onNotify(lp)
 			return true
 		}
 	case wmMouseMove:
@@ -471,9 +493,6 @@ func (p *panel) onMsg(hwnd, msg, wp, lp uintptr) bool {
 			if p.kind == "editor" && !p.canClose() {
 				return true
 			}
-			if p.kind == "prompt" {
-				p.promptDone = true
-			}
 			destroy(hwnd)
 			return true
 		}
@@ -491,9 +510,6 @@ func (p *panel) onMsg(hwnd, msg, wp, lp uintptr) bool {
 				p.himl = 0
 			}
 			p.hwnd = 0
-			if p.kind == "prompt" {
-				p.promptDone = true
-			}
 		}
 	}
 	return false
@@ -802,7 +818,7 @@ func openEditor(file string) {
 	p.btnPreview = p.iconBtn(p.hwnd, "Preview", "markdown", x, 4)
 	p.clicks[p.btnPreview] = p.openPreview
 	p.layoutBar()
-	p.tree = uintptr(create(p.hwnd, "SysTreeView32", "", wsChild|wsVis|tvsHasButtons|tvsShowSelAlways|tvsFullRowSelect, 8, barH, sideW, 640, 0))
+	p.tree = uintptr(create(p.hwnd, "SysTreeView32", "", wsChild|wsVis|tvsHasButtons|tvsEditLabels|tvsShowSelAlways|tvsFullRowSelect, 8, barH, sideW, 640, 0))
 	explorerTheme(p.tree)
 	p.treeIcons()
 	p.tabs = uintptr(create(p.hwnd, "SysTabControl32", "", wsChild|wsVis|wsClip|tcsOwnerDraw|tcsRagged, paneX, barH, 800, tabH, 0))
@@ -1069,38 +1085,60 @@ func (p *panel) tabCloseHit(lp uintptr) bool {
 	return true
 }
 
-func (p *panel) onNotify(lp uintptr) {
+func (p *panel) onNotify(lp uintptr) uintptr {
 	hdr := (*nmhdr)(unsafe.Pointer(lp))
 	if hdr.hwndFrom == p.tabs && hdr.code == tcnSelChange {
 		i := int(send(p.tabs, tcmGetCur, 0, 0))
 		p.activate(i)
-		return
+		return 0
 	}
 	if hdr.hwndFrom != p.tree {
-		return
+		return 0
 	}
 	if hdr.code == nmRClick {
 		p.treeMenu()
-		return
+		return 0
 	}
 	if hdr.code == tvnBeginDrag {
 		p.beginDrag((*nmtv)(unsafe.Pointer(lp)))
-		return
+		return 0
+	}
+	if hdr.code == tvnBeginLabel {
+		if !p.allowEdit {
+			return 1
+		}
+		p.allowEdit = false
+		if edit := send(p.tree, tvmGetEdit, 0, 0); edit != 0 {
+			send(edit, emSetSel, 0, ^uintptr(0))
+		}
+		return 0
+	}
+	if hdr.code == tvnEndLabel {
+		return p.finishEdit(lp)
+	}
+	if hdr.code == tvnKeyDown {
+		k := (*nmtvkey)(unsafe.Pointer(lp))
+		if k.wVKey == vkF2 {
+			p.renameSel()
+			return 1
+		}
+		return 0
 	}
 	nm := (*nmtv)(unsafe.Pointer(lp))
 	if nm.hdr.code != tvnSelChanged {
-		return
+		return 0
 	}
 	i := int(nm.itemNew.lParam)
 	if i < 0 || i >= len(p.nodes) {
-		return
+		return 0
 	}
 	n := p.nodes[i]
 	p.selPath = n.path
 	p.selFile = n.file
-	if n.file {
+	if n.file && !n.creating {
 		p.openPath(n.path)
 	}
+	return 0
 }
 
 func appendMenu(menu uintptr, id uintptr, title string) {
@@ -1559,44 +1597,162 @@ func joinRel(dir, name string) string {
 	return dir + "/" + name
 }
 
-func (p *panel) newFolder() {
-	name, ok := askName(p.hwnd, "New folder", "")
-	if !ok {
-		return
+func uniqueLeaf(taken map[string]bool, base string) string {
+	if !taken[strings.ToLower(base)] {
+		return base
 	}
-	name, ok = leafName(name)
-	if !ok {
-		return
+	ext := filepath.Ext(base)
+	stem := strings.TrimSuffix(base, ext)
+	for n := 2; ; n++ {
+		name := fmt.Sprintf("%s-%d%s", stem, n, ext)
+		if !taken[strings.ToLower(name)] {
+			return name
+		}
 	}
-	rel := joinRel(p.folderPrefix(), name)
-	if err := snippet.CreateDir(p.dataDir, rel); err != nil {
-		return
+}
+
+func (p *panel) takenIn(dir string) map[string]bool {
+	taken := map[string]bool{}
+	for _, n := range p.nodes {
+		if createParent(n.path, n.file) == dir {
+			taken[strings.ToLower(path.Base(filepath.ToSlash(n.path)))] = true
+		}
 	}
+	full := p.dataDir
+	if dir != "" {
+		if joined, err := snippet.JoinUnder(p.dataDir, dir); err == nil {
+			full = joined
+		}
+	}
+	ents, err := os.ReadDir(full)
+	if err != nil {
+		return taken
+	}
+	for _, e := range ents {
+		taken[strings.ToLower(e.Name())] = true
+	}
+	return taken
+}
+
+func (p *panel) parentItem(dir string) uintptr {
+	if dir == "" {
+		return tviRoot
+	}
+	for _, n := range p.nodes {
+		if n.path == dir && !n.file {
+			return n.item
+		}
+	}
+	return tviRoot
+}
+
+func (p *panel) startEdit(item uintptr) {
+	p.allowEdit = true
+	send(p.tree, tvmEditLabel, 0, item)
+}
+
+func (p *panel) beginCreate(file bool) {
+	dir := p.folderPrefix()
+	base := "New folder"
+	img := int32(0)
+	if file {
+		base = "untitled.md"
+		img = 1
+	}
+	name := uniqueLeaf(p.takenIn(dir), base)
+	rel := joinRel(dir, name)
+	parent := p.parentItem(dir)
+	if parent != tviRoot {
+		send(p.tree, tvmExpand, tveExpand, parent)
+	}
+	idx := len(p.nodes)
+	h := p.insertTree(parent, name, uintptr(idx), img)
+	p.nodes = append(p.nodes, tnode{path: rel, file: file, item: h, creating: true})
 	p.selPath = rel
-	p.selFile = false
-	p.fillTree()
+	p.selFile = file
+	send(p.tree, tvmSelectItem, tvgnCaret, h)
+	p.startEdit(h)
+}
+
+func (p *panel) newFolder() {
+	p.beginCreate(false)
 }
 
 func (p *panel) newNote() {
-	name, ok := askName(p.hwnd, "New note", "")
-	if !ok {
-		return
+	p.beginCreate(true)
+}
+
+func (p *panel) finishEdit(lp uintptr) uintptr {
+	info := (*nmdisp)(unsafe.Pointer(lp))
+	i := int(info.item.lParam)
+	if i < 0 || i >= len(p.nodes) {
+		return 0
 	}
+	n := p.nodes[i]
+	if info.item.pszText == 0 {
+		if n.creating {
+			p.fillTree()
+		}
+		return 0
+	}
+	name := windows.UTF16PtrToString((*uint16)(unsafe.Pointer(info.item.pszText)))
+	var ok bool
 	name, ok = leafName(name)
 	if !ok {
-		return
+		if n.creating {
+			p.fillTree()
+		}
+		return 0
 	}
-	rel := joinRel(p.folderPrefix(), name)
-	if err := snippet.CreateFile(p.dataDir, rel); err != nil {
-		return
+	if n.file && !strings.EqualFold(filepath.Ext(name), ".md") {
+		name = strings.TrimSuffix(name, filepath.Ext(name)) + ".md"
 	}
-	if !strings.EqualFold(filepath.Ext(rel), ".md") {
-		rel = strings.TrimSuffix(rel, filepath.Ext(rel)) + ".md"
+	dest := joinRel(createParent(n.path, n.file), name)
+	if n.creating {
+		if full, err := snippet.JoinUnder(p.dataDir, dest); err == nil {
+			if _, err := os.Stat(full); err == nil {
+				msgBox(p.hwnd, "A file or folder with that name already exists.", "Editor", 0x10)
+				p.fillTree()
+				return 0
+			}
+		}
+		var err error
+		if n.file {
+			err = snippet.CreateFile(p.dataDir, dest)
+		} else {
+			err = snippet.CreateDir(p.dataDir, dest)
+		}
+		if err != nil {
+			msg := "Can't create there."
+			if errors.Is(err, os.ErrExist) {
+				msg = "A file or folder with that name already exists."
+			}
+			msgBox(p.hwnd, msg, "Editor", 0x10)
+			p.fillTree()
+			return 0
+		}
+		p.selPath = dest
+		p.selFile = n.file
+		p.fillTree()
+		p.selectTree(dest)
+		if n.file {
+			p.openPath(dest)
+		}
+		return 1
 	}
-	p.selPath = rel
-	p.selFile = true
-	p.fillTree()
-	p.openPath(rel)
+	if dest == n.path {
+		return 0
+	}
+	if err := snippet.Move(p.dataDir, n.path, dest); err != nil {
+		msg := "Can't rename there."
+		if errors.Is(err, os.ErrExist) {
+			msg = "A file or folder with that name already exists."
+		}
+		msgBox(p.hwnd, msg, "Editor", 0x10)
+		return 0
+	}
+	p.afterMove(n.path, dest)
+	return 1
 }
 
 func (p *panel) deleteSel() {
@@ -1648,35 +1804,15 @@ func remapStored(old, neu, stored string) string {
 }
 
 func (p *panel) renameSel() {
-	rel := p.selPath
-	if rel == "" {
+	if p.selPath == "" {
 		return
 	}
-	cur := path.Base(filepath.ToSlash(rel))
-	name, ok := askName(p.hwnd, "Rename", cur)
-	if !ok {
-		return
-	}
-	name, ok = leafName(name)
-	if !ok {
-		return
-	}
-	if p.selFile && !strings.EqualFold(filepath.Ext(name), ".md") {
-		name = strings.TrimSuffix(name, filepath.Ext(name)) + ".md"
-	}
-	dest := joinRel(createParent(rel, p.selFile), name)
-	if dest == rel {
-		return
-	}
-	if err := snippet.Move(p.dataDir, rel, dest); err != nil {
-		msg := "Can't rename there."
-		if errors.Is(err, os.ErrExist) {
-			msg = "A file or folder with that name already exists."
+	for _, n := range p.nodes {
+		if n.path == p.selPath && !n.creating {
+			p.startEdit(n.item)
+			return
 		}
-		msgBox(p.hwnd, msg, "Editor", 0x10)
-		return
 	}
-	p.afterMove(rel, dest)
 }
 
 func (p *panel) afterMove(old, neu string) {
@@ -1718,43 +1854,6 @@ func (p *panel) afterMove(old, neu string) {
 		return
 	}
 	setText(p.hwnd, "Editor — "+p.curPath)
-}
-
-func askName(owner uintptr, title, initial string) (string, bool) {
-	p := &panel{kind: "prompt", clicks: map[uintptr]func(){}, on: map[uintptr]bool{}}
-	p.hwnd = create(owner, "", title, 0x90C80000, 200, 200, 360, 140, 0)
-	applyFrame(p.hwnd)
-	panels[p.hwnd] = p
-	p.static(p.hwnd, "Name", 12, 12, 80, 18)
-	p.dataEdit = p.edit(p.hwnd, "", 12, 36, 320, 24, false)
-	if initial != "" {
-		setText(p.dataEdit, initial)
-	}
-	ok := p.button(p.hwnd, "OK", 168, 72, 72, 26)
-	cancel := p.button(p.hwnd, "Cancel", 248, 72, 80, 26)
-	p.clicks[ok] = func() {
-		p.pending = textOf(p.dataEdit)
-		p.promptOK = true
-		p.promptDone = true
-		destroy(p.hwnd)
-	}
-	p.clicks[cancel] = func() {
-		p.promptDone = true
-		destroy(p.hwnd)
-	}
-	enableWin(owner, false)
-	var msg wmsg
-	for !p.promptDone {
-		r, _, _ := pGetMsg.Call(uintptr(unsafe.Pointer(&msg)), 0, 0, 0)
-		if r == 0 || int32(r) == -1 {
-			break
-		}
-		pTrans.Call(uintptr(unsafe.Pointer(&msg)))
-		pDispatch.Call(uintptr(unsafe.Pointer(&msg)))
-	}
-	enableWin(owner, true)
-	focus(owner)
-	return p.pending, p.promptOK
 }
 
 func (p *panel) onSize() {

@@ -2,6 +2,19 @@ package winapp
 
 import "testing"
 
+func TestUniqueLeaf(t *testing.T) {
+	taken := map[string]bool{"untitled.md": true, "new folder": true}
+	if uniqueLeaf(taken, "note.md") != "note.md" {
+		t.Fatal("free")
+	}
+	if uniqueLeaf(taken, "untitled.md") != "untitled-2.md" {
+		t.Fatal("file")
+	}
+	if uniqueLeaf(taken, "New folder") != "New folder-2" {
+		t.Fatal("dir")
+	}
+}
+
 func TestCreateParent(t *testing.T) {
 	cases := []struct {
 		path string
