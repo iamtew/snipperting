@@ -1058,7 +1058,7 @@ func labelWndProc(hwnd, msg, wp, lp uintptr) uintptr {
 	if msg == wmGetDlgCode {
 		return dlgcWantAll
 	}
-	if labelTV != 0 && (msg == wmKeyDown || msg == wmChar) {
+	if labelTV != 0 && msg == wmKeyDown {
 		if wp == vkReturn {
 			if labelP != nil {
 				labelP.labelEscaped = false
@@ -1651,6 +1651,11 @@ func (p *panel) folderPrefix() string {
 	return createParent(p.selPath, p.selFile)
 }
 
+// itemDir is the folder that contains rel (files and folders).
+func itemDir(rel string) string {
+	return createParent(rel, true)
+}
+
 func leafName(s string) (string, bool) {
 	s = strings.TrimSpace(s)
 	if s == "" || strings.ContainsAny(s, `/\`) || strings.Contains(s, "..") {
@@ -1798,7 +1803,7 @@ func (p *panel) queueTypedName(name string) {
 	p.labelCreate = n.creating
 	p.labelFile = n.file
 	p.labelSrc = n.path
-	p.labelDest = joinRel(createParent(n.path, n.file), name)
+	p.labelDest = joinRel(itemDir(n.path), name)
 	p.labelTyped = name
 	p.labelQueued = true
 	post(p.hwnd, wmLabelDone, 0, 0)
@@ -1854,7 +1859,7 @@ func (p *panel) finishEdit(lp uintptr) uintptr {
 	p.labelCreate = n.creating
 	p.labelFile = n.file
 	p.labelSrc = n.path
-	p.labelDest = joinRel(createParent(n.path, n.file), name)
+	p.labelDest = joinRel(itemDir(n.path), name)
 	p.labelQueued = true
 	post(p.hwnd, wmLabelDone, 0, 0)
 	return 1
@@ -1871,7 +1876,6 @@ func (p *panel) applyLabel(cancel bool) {
 	src, dest := p.labelSrc, p.labelDest
 	creating, file := p.labelCreate, p.labelFile
 	p.labelDest = ""
-	p.labelQueued = false
 	if creating {
 		if full, err := snippet.JoinUnder(p.dataDir, dest); err == nil {
 			if _, err := os.Stat(full); err == nil {

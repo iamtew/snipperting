@@ -15,6 +15,21 @@ func TestUniqueLeaf(t *testing.T) {
 	}
 }
 
+func TestItemDir(t *testing.T) {
+	if itemDir("Folder123") != "" {
+		t.Fatal("root folder")
+	}
+	if itemDir("Folder123/sub") != "Folder123" {
+		t.Fatal("nested folder")
+	}
+	if itemDir("Folder123/a.md") != "Folder123" {
+		t.Fatal("file")
+	}
+	if itemDir("a.md") != "" {
+		t.Fatal("root file")
+	}
+}
+
 func TestCreateParent(t *testing.T) {
 	cases := []struct {
 		path string
