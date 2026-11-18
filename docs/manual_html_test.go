@@ -19,6 +19,25 @@ func TestManualHTMLLoadsMarkdown(t *testing.T) {
 	}
 }
 
+func TestPagesLattice(t *testing.T) {
+	for _, name := range []string{"index.html", "manual.html"} {
+		b, err := os.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Contains(b, []byte("pages.css")) {
+			t.Fatalf("%s must load pages.css", name)
+		}
+	}
+	css, err := os.ReadFile("pages.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(css, []byte("bg.svg")) {
+		t.Fatal("pages.css must use bg.svg")
+	}
+}
+
 func TestPagesFavicon(t *testing.T) {
 	need := [][]byte{
 		[]byte(`rel="icon"`),
