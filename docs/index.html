@@ -5,15 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>snipperting</title>
   <style>
-    :root { font-family: "Segoe UI", system-ui, sans-serif; color: #1c1917; background: #f4f1ea; }
-    body { max-width: 42rem; margin: 2rem auto; padding: 0 16px; line-height: 1.5; }
-    .logo {
-      display: block; width: 96px; height: 96px; background: currentColor;
-      -webkit-mask: url(logo.svg) no-repeat center / contain;
-      mask: url(logo.svg) no-repeat center / contain;
+    :root { font-family: "Segoe UI", system-ui, sans-serif; color: #023047; background: #8ECAE6; }
+    @media (prefers-color-scheme: dark) {
+      :root { color: #8ECAE6; background: #023047; }
     }
-    a { color: #0f766e; }
-    code { background: #e7e5e4; padding: 0 4px; }
+    body { max-width: 42rem; margin: 2rem auto; padding: 0 16px; line-height: 1.5; }
+    .logo { display: block; width: 96px; height: 96px; }
+    a { color: #FB8500; }
+    @media (prefers-color-scheme: dark) {
+      a { color: #FFB703; }
+    }
+    code { background: #219EBC; padding: 0 4px; }
     .gh {
       display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem;
       margin: 1.25rem 0; padding: 0;
@@ -28,7 +30,7 @@
   </style>
 </head>
 <body>
-  <p><span class="logo" role="img" aria-label="snipperting"></span></p>
+  <p><img class="logo" src="logo.svg" width="96" height="96" alt="snipperting"></p>
   <h1>snipperting</h1>
   <p>Save text snippets on Windows and fire them from the system tray. Copy to the clipboard, or inject at the caret.</p>
   <nav class="gh" aria-label="GitHub">

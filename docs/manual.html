@@ -7,21 +7,21 @@
   <style>
     :root {
       color-scheme: light dark;
-      --bg: #f4f1ea;
-      --fg: #1c1917;
-      --muted: #57534e;
-      --chip: #e7e5e4;
-      --accent: #0f766e;
-      --rule: #d6d3d1;
+      --bg: #8ECAE6;
+      --fg: #023047;
+      --muted: #219EBC;
+      --chip: #219EBC;
+      --accent: #FB8500;
+      --rule: #219EBC;
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #1c1917;
-        --fg: #f4f1ea;
-        --muted: #a8a29e;
-        --chip: #292524;
-        --accent: #0f766e;
-        --rule: #44403c;
+        --bg: #023047;
+        --fg: #8ECAE6;
+        --muted: #219EBC;
+        --chip: #219EBC;
+        --accent: #FFB703;
+        --rule: #219EBC;
       }
     }
     html, body { margin: 0; background: var(--bg); color: var(--fg); }
@@ -35,11 +35,7 @@
       display: flex; align-items: center; gap: 0.75rem;
       color: inherit; text-decoration: none; font-weight: 600; letter-spacing: -0.02em;
     }
-    .brand .logo {
-      width: 48px; height: 48px; background: currentColor;
-      -webkit-mask: url(logo.svg) no-repeat center / contain;
-      mask: url(logo.svg) no-repeat center / contain;
-    }
+    .brand .logo { width: 48px; height: 48px; }
     header nav {
       display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem;
     }
@@ -86,7 +82,7 @@
 <body>
   <header>
     <a class="brand" href="index.html">
-      <span class="logo" role="img" aria-label="snipperting"></span>
+      <img class="logo" src="logo.svg" width="48" height="48" alt="snipperting">
       snipperting
     </a>
     <nav aria-label="Site">
