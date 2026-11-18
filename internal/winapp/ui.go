@@ -71,8 +71,10 @@ const (
 	tvmGetEdit      = 0x110F
 	tvmEndEdit      = 0x1116
 	wmKeyDown       = 0x0100
+	wmChar          = 0x0102
+	wmKillFocus     = 0x0008
 	wmGetDlgCode    = 0x0087
-	dlgcWantAll     = 0x0004
+	dlgcWantAll     = 0x0085 // WANTARROWS|WANTALLKEYS|WANTCHARS
 	vkReturn        = 0x0D
 	vkEscape        = 0x1B
 	tvmExpand       = 0x1102
@@ -254,6 +256,7 @@ var (
 	labelCB  uintptr
 	labelOld uintptr
 	labelTV  uintptr
+	labelP   *panel
 )
 
 type panel struct {
@@ -293,8 +296,11 @@ type panel struct {
 	editItem     uintptr
 	labelCreate  bool
 	labelFile    bool
-	labelSrc     string
-	labelDest    string
+	labelSrc      string
+	labelDest     string
+	labelTyped    string
+	labelEscaped  bool
+	labelQueued   bool
 	dragging   bool
 	dragPath   string
 	ready      bool
@@ -1035,8 +1041,8 @@ func (p *panel) snipFmt(kind string) {
 	p.chrome.Eval("window.snipFmt&&window.snipFmt(" + string(k) + ")&&true")
 }
 
-func hookLabelEdit(edit, tree uintptr) {
-	if edit == 0 {
+func hookLabelEdit(edit uintptr, p *panel) {
+	if edit == 0 || p == nil {
 		return
 	}
 	if labelCB == 0 {
@@ -1044,22 +1050,34 @@ func hookLabelEdit(edit, tree uintptr) {
 	}
 	old, _, _ := pSetLong.Call(edit, ^uintptr(3), labelCB)
 	labelOld = old
-	labelTV = tree
+	labelTV = p.tree
+	labelP = p
 }
 
 func labelWndProc(hwnd, msg, wp, lp uintptr) uintptr {
 	if msg == wmGetDlgCode {
 		return dlgcWantAll
 	}
-	if msg == wmKeyDown && labelTV != 0 {
+	if labelTV != 0 && (msg == wmKeyDown || msg == wmChar) {
 		if wp == vkReturn {
-			send(labelTV, tvmEndEdit, 0, 0)
-			return 0
-		}
-		if wp == vkEscape {
+			if labelP != nil {
+				labelP.labelEscaped = false
+				labelP.queueTypedName(textOf(hwnd))
+			}
 			send(labelTV, tvmEndEdit, 1, 0)
 			return 0
 		}
+		if wp == vkEscape {
+			if labelP != nil {
+				labelP.labelEscaped = true
+				labelP.labelTyped = ""
+			}
+			send(labelTV, tvmEndEdit, 1, 0)
+			return 0
+		}
+	}
+	if msg == wmKillFocus && labelP != nil && !labelP.labelEscaped {
+		labelP.queueTypedName(textOf(hwnd))
 	}
 	if labelOld != 0 {
 		r, _, _ := pCallOld.Call(labelOld, hwnd, msg, wp, lp)
@@ -1161,7 +1179,6 @@ func (p *panel) onNotify(lp uintptr) uintptr {
 		p.allowEdit = false
 		if edit := send(p.tree, tvmGetEdit, 0, 0); edit != 0 {
 			send(edit, emSetSel, 0, ^uintptr(0))
-			hookLabelEdit(edit, p.tree)
 		}
 		return 0
 	}
@@ -1701,7 +1718,15 @@ func (p *panel) parentItem(dir string) uintptr {
 func (p *panel) startEdit(item uintptr) {
 	p.allowEdit = true
 	p.editItem = item
+	p.labelTyped = ""
+	p.labelEscaped = false
+	p.labelQueued = false
 	send(p.tree, tvmEditLabel, 0, item)
+	// TreeView subclasses the edit after BEGINLABELEDIT; hook after that.
+	if edit := send(p.tree, tvmGetEdit, 0, 0); edit != 0 {
+		send(edit, emSetSel, 0, ^uintptr(0))
+		hookLabelEdit(edit, p)
+	}
 }
 
 func (p *panel) nodeByItem(h uintptr) (tnode, bool) {
@@ -1747,7 +1772,42 @@ func (p *panel) newNote() {
 	p.beginCreate(true)
 }
 
+func (p *panel) queueTypedName(name string) {
+	if p == nil || p.labelQueued {
+		return
+	}
+	n, ok := p.nodeByItem(p.editItem)
+	if !ok {
+		for _, x := range p.nodes {
+			if x.creating {
+				n, ok = x, true
+				break
+			}
+		}
+	}
+	if !ok {
+		return
+	}
+	name, ok = leafName(name)
+	if !ok {
+		return
+	}
+	if n.file && !strings.EqualFold(filepath.Ext(name), ".md") {
+		name = strings.TrimSuffix(name, filepath.Ext(name)) + ".md"
+	}
+	p.labelCreate = n.creating
+	p.labelFile = n.file
+	p.labelSrc = n.path
+	p.labelDest = joinRel(createParent(n.path, n.file), name)
+	p.labelTyped = name
+	p.labelQueued = true
+	post(p.hwnd, wmLabelDone, 0, 0)
+}
+
 func (p *panel) finishEdit(lp uintptr) uintptr {
+	if p.labelQueued {
+		return 0
+	}
 	info := (*nmdisp)(unsafe.Pointer(lp))
 	n, ok := p.nodeByItem(info.item.hItem)
 	if !ok {
@@ -1760,13 +1820,27 @@ func (p *panel) finishEdit(lp uintptr) uintptr {
 		}
 		n = p.nodes[i]
 	}
-	if info.item.pszText == 0 {
+	if p.labelEscaped {
 		if n.creating {
 			post(p.hwnd, wmLabelDone, 1, 0)
 		}
+		p.labelTyped = ""
+		p.labelEscaped = false
 		return 0
 	}
-	name := windows.UTF16PtrToString((*uint16)(unsafe.Pointer(info.item.pszText)))
+	name := ""
+	if info.item.pszText != 0 {
+		name = windows.UTF16PtrToString((*uint16)(unsafe.Pointer(info.item.pszText)))
+	}
+	if name == "" {
+		name = p.labelTyped
+	}
+	if name == "" {
+		if edit := send(p.tree, tvmGetEdit, 0, 0); edit != 0 {
+			name = textOf(edit)
+		}
+	}
+	p.labelTyped = ""
 	name, ok = leafName(name)
 	if !ok {
 		if n.creating {
@@ -1781,6 +1855,7 @@ func (p *panel) finishEdit(lp uintptr) uintptr {
 	p.labelFile = n.file
 	p.labelSrc = n.path
 	p.labelDest = joinRel(createParent(n.path, n.file), name)
+	p.labelQueued = true
 	post(p.hwnd, wmLabelDone, 0, 0)
 	return 1
 }
@@ -1796,6 +1871,7 @@ func (p *panel) applyLabel(cancel bool) {
 	src, dest := p.labelSrc, p.labelDest
 	creating, file := p.labelCreate, p.labelFile
 	p.labelDest = ""
+	p.labelQueued = false
 	if creating {
 		if full, err := snippet.JoinUnder(p.dataDir, dest); err == nil {
 			if _, err := os.Stat(full); err == nil {

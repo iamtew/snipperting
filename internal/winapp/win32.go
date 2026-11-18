@@ -19,6 +19,7 @@ var (
 	pReg        = u32.NewProc("RegisterClassExW")
 	pCreate     = u32.NewProc("CreateWindowExW")
 	pGetMsg     = u32.NewProc("GetMessageW")
+	pPeek       = u32.NewProc("PeekMessageW")
 	pTrans      = u32.NewProc("TranslateMessage")
 	pDispatch   = u32.NewProc("DispatchMessageW")
 	pMetrics    = u32.NewProc("GetSystemMetrics")
@@ -75,6 +76,18 @@ type wrect struct{ left, top, right, bottom int32 }
 type wpoint struct{ x, y int32 }
 
 func post(h, msg, wp, lp uintptr) { pPost.Call(h, msg, wp, lp) }
+
+func pump() {
+	var msg wmsg
+	for {
+		r, _, _ := pPeek.Call(uintptr(unsafe.Pointer(&msg)), 0, 0, 0, 1)
+		if r == 0 {
+			return
+		}
+		pTrans.Call(uintptr(unsafe.Pointer(&msg)))
+		pDispatch.Call(uintptr(unsafe.Pointer(&msg)))
+	}
+}
 
 func send(h, msg, wp, lp uintptr) uintptr {
 	r, _, _ := pSend.Call(h, msg, wp, lp)
