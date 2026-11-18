@@ -81,7 +81,7 @@ code {
   border: 2px solid var(--rule);
   border-radius: 12px;
 }
-.home .shot { margin: 1.25rem 0 0; }
+.home .shot { margin: 0; }
 .home .wordmark {
   display: flex;
   align-items: center;
