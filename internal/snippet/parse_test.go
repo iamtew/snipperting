@@ -48,6 +48,17 @@ func TestEncodeRoundTrip(t *testing.T) {
 	}
 }
 
+func TestEncodeStripsHeaderNewlines(t *testing.T) {
+	raw := Encode(Meta{Label: "A\n----\nhi", About: "B\r\nC"}, "body")
+	got := Parse(raw)
+	if got.Meta.Label != "A ---- hi" || got.Meta.About != "B  C" {
+		t.Fatalf("meta %+v", got.Meta)
+	}
+	if got.Body != "body\n" {
+		t.Fatalf("body %q", got.Body)
+	}
+}
+
 func TestWalkAndJoin(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(dir, "work"), 0o755); err != nil {

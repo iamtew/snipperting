@@ -7,9 +7,9 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const url = "https://registry.npmjs.org/monaco-editor/-/monaco-editor-0.52.2.tgz"
@@ -19,7 +19,8 @@ func main() {
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		fatal(err)
 	}
-	resp, err := http.Get(url)
+	client := &http.Client{Timeout: 2 * time.Minute}
+	resp, err := client.Get(url)
 	if err != nil {
 		fatal(err)
 	}
@@ -48,6 +49,9 @@ func main() {
 			continue
 		}
 		rel := strings.TrimPrefix(name, prefix)
+		if rel == "" || !filepath.IsLocal(filepath.FromSlash(rel)) {
+			continue
+		}
 		out := filepath.Join(dest, filepath.FromSlash(rel))
 		if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
 			fatal(err)
@@ -62,7 +66,6 @@ func main() {
 		}
 		f.Close()
 		n++
-		_ = path.Base(rel)
 	}
 	fmt.Printf("vendored %d monaco files into %s\n", n, dest)
 }

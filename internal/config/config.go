@@ -113,11 +113,17 @@ func (s *Store) Get() File {
 func (s *Store) Set(next File) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	prev := s.cur
 	s.cur = next
-	if err := s.normalize(); err != nil {
+	err := s.normalize()
+	if err == nil {
+		err = s.saveLocked()
+	}
+	if err != nil {
+		s.cur = prev
 		return err
 	}
-	return s.saveLocked()
+	return nil
 }
 
 func (s *Store) saveLocked() error {
@@ -125,5 +131,25 @@ func (s *Store) saveLocked() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(s.path, append(b, '\n'), 0o644)
+	dir := filepath.Dir(s.path)
+	f, err := os.CreateTemp(dir, ".cfg-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	_, werr := f.Write(append(b, '\n'))
+	cerr := f.Close()
+	if werr != nil {
+		os.Remove(tmp)
+		return werr
+	}
+	if cerr != nil {
+		os.Remove(tmp)
+		return cerr
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		os.Remove(tmp)
+		return err
+	}
+	return nil
 }

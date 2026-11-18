@@ -84,8 +84,8 @@ func Encode(m Meta, body string) []byte {
 	}
 	var b bytes.Buffer
 	b.WriteString(fence + "\n")
-	b.WriteString("label: " + m.Label + "\n")
-	b.WriteString("about: " + m.About + "\n")
+	b.WriteString("label: " + oneLine(m.Label) + "\n")
+	b.WriteString("about: " + oneLine(m.About) + "\n")
 	b.WriteString("action: " + m.Action + "\n")
 	b.WriteString("state: " + state + "\n")
 	b.WriteString("hidden: " + hidden + "\n")
@@ -101,6 +101,11 @@ func ApplyMeta(raw []byte, edit func(*Meta)) []byte {
 	d := Parse(raw)
 	edit(&d.Meta)
 	return Encode(d.Meta, d.Body)
+}
+
+func oneLine(s string) string {
+	s = strings.ReplaceAll(s, "\r", " ")
+	return strings.ReplaceAll(s, "\n", " ")
 }
 
 func defaults() Meta {
@@ -292,7 +297,30 @@ func Write(dataDir, rel string, data []byte) error {
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(p, data, 0o644)
+	return writeReplace(p, data)
+}
+
+func writeReplace(path string, data []byte) error {
+	f, err := os.CreateTemp(filepath.Dir(path), ".snip-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	_, werr := f.Write(data)
+	cerr := f.Close()
+	if werr != nil {
+		os.Remove(tmp)
+		return werr
+	}
+	if cerr != nil {
+		os.Remove(tmp)
+		return cerr
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		os.Remove(tmp)
+		return err
+	}
+	return nil
 }
 
 func UpdateMeta(dataDir, rel string, edit func(*Meta)) error {

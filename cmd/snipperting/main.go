@@ -35,15 +35,18 @@ func main() {
 // parseOpen reads --prefs and --edit. A following arg that does not start with - is the note path.
 func parseOpen(args []string) (prefs, edit bool, editFile string) {
 	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--prefs":
+		switch {
+		case args[i] == "--prefs":
 			prefs = true
-		case "--edit":
+		case args[i] == "--edit":
 			edit = true
 			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
 				i++
 				editFile = args[i]
 			}
+		case strings.HasPrefix(args[i], "--edit="):
+			edit = true
+			editFile = strings.TrimPrefix(args[i], "--edit=")
 		}
 	}
 	return

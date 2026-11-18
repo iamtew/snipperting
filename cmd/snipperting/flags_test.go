@@ -19,4 +19,8 @@ func TestParseOpen(t *testing.T) {
 	if !p || !e || f != "" {
 		t.Fatal("edit then prefs is not a file")
 	}
+	p, e, f = parseOpen([]string{"--edit=rel.md"})
+	if p || !e || f != "rel.md" {
+		t.Fatal("equals form", p, e, f)
+	}
 }
