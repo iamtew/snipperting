@@ -41,7 +41,9 @@ vendor-monaco:
     go run ./tools/vendor-monaco
 
 # install to %LOCALAPPDATA%\snipperting and add a Start Menu shortcut
+# shebang: windows-shell starts a new powershell per line, so $dest would be lost
 install: build icon
+    #!powershell.exe
     $dest = Join-Path $env:LOCALAPPDATA "snipperting"
     New-Item -ItemType Directory -Force $dest | Out-Null
     Copy-Item -Force dist/snipperting.exe $dest
