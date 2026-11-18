@@ -59,7 +59,7 @@ Above the text: a format bar on the left (bold, italic, strikethrough, heading, 
 
 ## What a snippet file is
 
-Each snippet is a `.md` file in your snippets folder. Subfolders become menu categories.
+Each snippet is a `.md` file in your snippets folder. Subfolders become menu categories. Name them the way a desk already works: Email, Meetings, Ops. File names stay readable (`follow-up.md`, `weekly-status.md`). The tray uses the label; Edit’s tree uses the name on disk.
 
 You can edit these files here in snipperting or in any text editor. They are just text.
 
@@ -67,13 +67,17 @@ An optional header at the top is **not** copied or injected — only the body is
 
 ```
 ----
-label: Meeting sign-off
-about: Closing line for email
+label: Follow-up
+about: After a meeting, send notes and owners
 action: clipboard
 state: enable
 hidden: false
 ----
-Thanks for your time today. I will send notes after the call.
+Hi,
+
+Thanks for the time today. I will send the notes and action items by end of day.
+
+Best,
 ```
 
 - **label** — text on the menu (the file name if you leave this blank)

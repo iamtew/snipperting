@@ -49,19 +49,26 @@ Data dir can have sub-folders, these will be shown as categories, sub-menus, in 
 
 ## File format
 Snippets can have a header, that won't be included when injecting or copying info clipboard.
-Example: `demo-snippet.md`
+Example: `follow-up.md`
 
 ```md
 ----
-label: Demo Snippet (label will be used instead of filename in menu, if it's configured).
+label: Follow-up (label will be used instead of filename in menu, if it's configured).
 about: Description of the snippet displayed when hovering an item in the menu, kinda like alt-text.
 action: comma-separated inject and/or clipboard - actions that fire when clicked, in that order. Default clipboard. Unknown tokens dropped. At least one action.
 state: enable/disable, on/off, true/false. a bool, can be updated by clicking menu button.
 hidden: true/false - bool, hides item from menu.
 ----
-# Snippet example title
-Wow a snippet body, so fancy!
+Hi,
+
+Thanks for the time today. I will send the notes and action items by end of day.
+
+Best,
 ```
+
+## Screenshots and demo notes
+This is the product look. Screenshots, Pages, the manual, and Help examples show a desk at work: meetings, email, status, ops. Not lorem, jokes, “test snippet”, or toy names.
+Dummy notes for shots live on the Meat Bag machine in `~/.snipperting` (not in the repo, not shipped). Folders: `Email`, `Meetings` (nested `Q4-planning`), `Ops`, `Templates`. Root notes for the weekly bits people click often. File names are readable English (`follow-up.md`, `weekly-status.md`). Labels match what a person would click on the tray. One disabled and one hidden note is enough if Bulk Edit needs both states. Rebuild that tree when the data dir is empty and shots are due.
 
 ## Editor
 Edit is modeled on VS Code: native file tree plus Monaco, with a status bar under the text. Native chrome (tabs, format bar, explorer icons) stays.

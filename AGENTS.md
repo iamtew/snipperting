@@ -6,6 +6,7 @@ Windows SysTray snippets app. Spec is the Bible: [docs/app-spec.md](docs/app-spe
 - **Stack:** Go 1.26, Just. WebView2 maps `web/` to `https://snipperting.example/` for Monaco. Tray, prefs, help, and about are native. Edit is modeled on VS Code (native file tree + Monaco + status bar). Help WebView2 shows rendered MANUAL.md via NavigateToString.
 - **Config:** `config.json` next to the executable, created on first start. Not shipped. Keys: `dataDir` (default `~/.snipperting`), `clipNotice` (bool, default true), `theme` (`system` / `light` / `dark`, default `system`). Native windows and Monaco follow `theme`.
 - **Data:** Markdown files with optional `----` header (`label`, `about`, `action` comma-separated `inject`/`clipboard`, `state`, `hidden`). Subfolders = menu categories. Read and written natively.
+- **Look:** Screenshots and docs show office work (meetings, email, status, ops). Spec: Screenshots and demo notes. Dummy tree in `~/.snipperting`, not the repo.
 - **Verify:** `just test`. After `just run`, one tray process (named mutex).
 
 ## File map
