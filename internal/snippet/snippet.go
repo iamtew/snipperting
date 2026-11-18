@@ -254,6 +254,21 @@ func CreateDir(dataDir, rel string) error {
 	return os.MkdirAll(p, 0o755)
 }
 
+func Remove(dataDir, rel string) error {
+	p, err := JoinUnder(dataDir, rel)
+	if err != nil {
+		return err
+	}
+	st, err := os.Stat(p)
+	if err != nil {
+		return err
+	}
+	if st.IsDir() {
+		return os.RemoveAll(p)
+	}
+	return os.Remove(p)
+}
+
 func CreateFile(dataDir, rel string) error {
 	if !strings.EqualFold(filepath.Ext(rel), ".md") {
 		rel = strings.TrimSuffix(rel, filepath.Ext(rel)) + ".md"

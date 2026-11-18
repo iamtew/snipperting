@@ -103,6 +103,18 @@ func TestCreateDirAndFile(t *testing.T) {
 	if d.Meta.Action != "clipboard" || !d.Meta.Enabled {
 		t.Fatalf("header %+v", d.Meta)
 	}
+	if err := Remove(dir, "../nope.md"); err == nil {
+		t.Fatal("expected reject")
+	}
+	if err := Remove(dir, "notes/hello.md"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Read(dir, "notes/hello.md"); err == nil {
+		t.Fatal("file still there")
+	}
+	if err := Remove(dir, "notes"); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestStateSynonyms(t *testing.T) {
