@@ -143,10 +143,9 @@ require(["vs/editor/editor.main"], function () {
     editor.setModel(m);
     if (bodyEnd) {
       const last = m.getLineCount();
-      const pos = { lineNumber: last, column: m.getLineMaxColumn(last) };
-      editor.setPosition(pos);
-      editor.revealPosition(pos);
+      editor.setPosition({ lineNumber: last, column: m.getLineMaxColumn(last) });
       editor.focus();
+      editor.setScrollTop(0);
     }
     paintStatus();
   };

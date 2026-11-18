@@ -27,6 +27,9 @@ func TestEditorHTMLHasWorker(t *testing.T) {
 	if !bytes.Contains(b, []byte("bodyEnd")) || !bytes.Contains(b, []byte("setPosition")) {
 		t.Fatal("editor.html snipOpen must place caret at body end when asked")
 	}
+	if !bytes.Contains(b, []byte("setScrollTop(0)")) {
+		t.Fatal("editor.html must keep New notes scrolled to the top")
+	}
 	if !bytes.Contains(b, []byte("snipSaveAll")) {
 		t.Fatal("editor.html must expose snipSaveAll")
 	}
