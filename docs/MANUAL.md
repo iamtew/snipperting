@@ -1,63 +1,85 @@
-# snipperting manual
+# snipperting
 
-snipperting keeps text snippets in Markdown files and serves them from the Windows tray.
+Keep bits of text you reuse all the time, then fire them from the little icon by the clock. Click a snippet to copy it, or drop it straight into whatever you were typing.
 
-## Install
+## Getting started
 
-Install into `%LOCALAPPDATA%\snipperting`. Start snipperting from the Start Menu shortcut.
+After you install snipperting, start it from the Start Menu. A tray icon shows up near the clock (you may need to click the little arrow to see it).
 
-Preferences, Help, and About are native windows. The editor uses Monaco. Help shows this manual rendered as markdown, with a table of contents at the top.
+Click that icon for the menu. First run also creates a snippets folder named `.snipperting` in your user folder. You can pick a different folder later in Preferences.
 
-## Data folder
+Only one snipperting runs at a time. Starting it again while it is already in the tray does nothing — use the icon that is already there.
 
-Default data directory is `~/.snipperting` (`%USERPROFILE%\.snipperting`). Change it in Preferences.
+## Use a snippet
 
-Each `.md` file is one snippet. Subfolders become menu categories.
+Open the tray menu and click a snippet.
 
-## Snippet files
+- **Clipboard** puts the snippet on the clipboard. Paste with Ctrl+V as usual. A small “Copied to clipboard” notice can appear; it does not steal the keyboard. Turn it off in Preferences if it gets in the way.
+- **Inject** pastes into the last window you were typing in. The tray click would otherwise steal focus, so snipperting remembers that window (it skips itself and the Windows tray). Click the other app first, then the tray snippet.
 
-Optional header (clipboard and inject use the body only):
+Each snippet has its own action. Change it in Preferences → Bulk Edit, or in the snippet file.
+
+**Disabled** snippets stay on the menu but are grayed out and do nothing. **Hidden** snippets are not on the menu at all. You can still see both in Edit.
+
+## The tray menu
+
+Left-click or right-click the icon; both open the same menu.
+
+Snippets at this folder level are listed first, then folders. A folder opens to the side as another menu, so you can group related notes.
+
+Hover a snippet to see its short description, if it has one.
+
+Under the line at the bottom:
+
+- **Edit** — write and organize snippets
+- **Preferences** — folder, theme, and bulk settings
+- **Help** — this guide
+- **About** — version
+- **Exit** — quit snipperting (the icon goes away until you start it again)
+
+## Edit your snippets
+
+Open **Edit** from the tray. The left side is a file tree of your snippets folder. Folders are listed first, then files. Hidden snippets still show up here so you can find them.
+
+On the explorer row: **New note**, **New folder**, and **Save** on the left; **Delete** on the right.
+
+- New note and New folder land in the folder you selected, or in the same folder as the selected file.
+- A new note is a Markdown file with a small header on top. It starts as clipboard, enabled, and visible on the menu.
+- Save writes the open note (or press Ctrl+S). The floppy icon does the same.
+- Delete asks Yes/No, then removes the selected note or folder. A folder takes everything inside it. Open tabs for those files close.
+
+You can keep several notes open as tabs. Close a tab with the × on the tab. If you have unsaved changes, you get a chance to keep them before a tab or the window goes away.
+
+Above the text: a format bar on the left (bold, italic, strikethrough, heading, quote, lists, code, link). It wraps the selection; click the same button again to take the marks off. **Preview** sits on the right of that row and opens a second tab with the note rendered as Markdown. Preview shows the body only (not the header) and is not saved as its own file. Close the note and its preview goes with it.
+
+## What a snippet file is
+
+Each snippet is a `.md` file in your snippets folder. Subfolders become menu categories.
+
+You can edit these files here in snipperting or in any text editor. They are just text.
+
+An optional header at the top is **not** copied or injected — only the body is. If you skip the header, the file name is the menu name, the action is clipboard, and the item is enabled and visible.
 
 ```
 ----
-label: Demo Snippet
-about: Shown when hovering the menu item
-action: inject
+label: Meeting sign-off
+about: Closing line for email
+action: clipboard
 state: enable
 hidden: false
 ----
-Snippet body goes here.
+Thanks for your time today. I will send notes after the call.
 ```
 
-- `label` — menu text (filename if omitted)
-- `about` — hover text
-- `action` — `inject` or `clipboard` (left-click)
-- `state` — `enable` / `disable` (disabled items stay visible but cannot be used)
-- `hidden` — hide from the tray menu
-
-## Tray menu
-
-Click the tray icon for a native Windows menu.
-
-- Click a snippet to run its configured action (`clipboard` or `inject`)
-- Disabled snippets stay in the list but are grayed out
-- Folders open as submenus and sit after snippet files at each menu level
-- Edit, Preferences, Help, About, Exit sit under a separator
-- Change action, enabled, or hidden in Preferences → Bulk Edit
-
-**Clipboard** copies the snippet body and, by default, shows a brief “Copied to clipboard” notice that leaves focus where you were typing. Turn the notice off in Preferences. **Inject** pastes at the caret in the last window you were typing in (not snipperting and not the tray), even after the tray click steals focus.
-
-## Editor
-
-Edit opens a native window. The file tree is native (all `.md` files and folders), with indent and file/folder icons. Folders are listed first, then files, at each indent level. New note, New folder, and Save sit on the left of the explorer; Delete sits on the right of that row. New note and New folder land in the selected folder, or next to the selected file. Delete asks Yes/No, then removes the selected note or folder (folders include their contents). Tabs keep several notes open; close a tab with the × on the tab, or close the window. Unsaved notes prompt before discard. Ctrl+S saves the active tab; the floppy icon on the explorer does the same. A markdown format bar on the left of the editor wraps the selection (bold, italic, lists, code, link, and so on); click again to unwrap. Preview is on the right of that row and opens a second tab with the note body rendered as markdown (header omitted). The text area is Monaco inside that window. Save writes the `.md` file, header included. Monaco and preview follow the Preferences theme.
+- **label** — text on the menu (the file name if you leave this blank)
+- **about** — the hover hint on the menu
+- **action** — `clipboard` or `inject`
+- **state** — `enable` or `disable` (disabled stays on the menu, gray)
+- **hidden** — `true` hides it from the tray; `false` shows it
 
 ## Preferences
 
-- **Data directory** — where snippets live. Browse opens a folder picker; picking a folder saves it
-- **Show copied notice** — on-screen indicator after a clipboard copy (default on)
-- **Theme** — System (follow Windows), Light, or Dark. Applies immediately.
-- **Bulk Edit** — rows list filenames. Folders sit after files at each indent level. Inject vs Clipboard are two buttons; the pressed one is the current action. State and hidden stay on/off and shown/hidden.
-
-## Config
-
-`config.json` is created next to the executable on first run.
+- **Data directory** — where the snippet files live. Browse opens a folder picker. Pick a folder and it is saved; Bulk Edit refreshes to match. Cancel leaves the path as it was.
+- **Show copied notice** — the small on-screen “copied” after a clipboard snippet (inject never shows it).
+- **Theme** — System (follow Windows), Light, or Dark. It applies right away to snipperting’s windows, the editor, and Help.
+- **Bulk Edit** — one row per snippet. At each indent, files come first, then folders (same as the tray). Inject and Clipboard are two buttons; the pressed one is the current action. Enabled and hidden are on/off. Changes are written into each file.
