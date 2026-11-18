@@ -6,7 +6,7 @@ snipperting keeps text snippets in Markdown files and serves them from the Windo
 
 Install into `%LOCALAPPDATA%\snipperting`. Start snipperting from the Start Menu shortcut.
 
-The app listens on `127.0.0.1` port 45690–45699 (first free port) so the editor can load Monaco. It does not accept connections from the network. Preferences, help, and about are native windows.
+The editor loads Monaco inside WebView2 from files next to the app. There is no HTTP server. Preferences, help, and about are native windows.
 
 ## Data folder
 

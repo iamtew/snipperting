@@ -7,7 +7,7 @@ goflags := "-ldflags \"-X main.version=" + version + "\""
 default:
     just --list
 
-# run Go tests (parser + health/monaco file server)
+# run Go tests (parser + editor.html contract)
 test:
     go test ./...
 
