@@ -82,6 +82,17 @@ code {
   border-radius: 12px;
 }
 .home .shot { margin: 1.25rem 0 0; }
+.home .wordmark {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.home .wordmark h1 {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
 .home .logo { display: block; width: 96px; height: 96px; }
 .home .gh {
   display: flex;

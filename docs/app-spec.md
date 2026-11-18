@@ -121,6 +121,7 @@ Empty data dir shows an empty-state line.
 ## `./docs` folder, website and documentation
 The `./docs` folder shall contain a website for GitHub pages.
 Think product page, explaining the application.
+The product page wordmark is the logo and the name `snipperting` on one row (name to the right of the logo).
 The product page links to a rendered manual (`manual.html`). That page loads `MANUAL.md` in the browser and renders it (title and intro, then table of contents, heading anchors). `MANUAL.md` is the source.
 The product page shows the Editor client-area screenshot (`docs/shots/editor.png`). The manual shows Editor and Preferences shots (`shots/editor.png`, `shots/preferences.png`).
 The product page and the manual header link to GitHub: source repo, latest release, and the issue tracker. Those links use vendored Tabler icons (`docs/vendor/tabler/`). Both pages set `docs/logo.svg` as the favicon.
