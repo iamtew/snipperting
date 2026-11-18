@@ -19,13 +19,13 @@ internal/winapp             tray, native windows, Monaco child, clipboard, injec
 tools/png2ico               PNG → .ico (copies, does not touch assets/logo.png)
 tools/tabler                Tabler SVG → 16px .ico for the tray menu
 web/                        editor shell + vendored Monaco and Tabler
-docs/                       GitHub Pages + MANUAL.md (also go:embed for Help)
+docs/                       GitHub Pages + MANUAL.md (embed for Help; manual.html loads it)
 installer/snipperting.iss   Inno → %LOCALAPPDATA%\snipperting
 ```
 
 ## Just
 
-- `just test` — parser + editor.html contract
+- `just test` — parser + editor.html + Pages manual contract
 - `just build` / `just run`
 - `just vendor-monaco` — Monaco into `web/vendor/monaco` (not committed)
 - `just icon` / `just docs-logo`
