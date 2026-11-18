@@ -36,6 +36,7 @@ const (
 	wsOver    = 0x00CF0000
 	wsVis     = 0x10000000
 	wsChild   = 0x40000000
+	wsPop     = 0x80000000
 	wsVScroll = 0x00200000
 	wsBorder  = 0x00800000
 	wsTab     = 0x00010000
@@ -77,6 +78,11 @@ const (
 	tcifText     = 0x0001
 	wmPaint      = 0x000F
 	tcnSelChange = ^uint32(550) // TCN_SELCHANGE = -551
+	ttsAlways    = 0x01
+	ttsNoPrefix  = 0x02
+	ttfIdHwnd    = 0x0001
+	ttfSubclass  = 0x0010
+	ttmAddTool   = 0x0432 // TTM_ADDTOOLW
 
 	mbYesNoCancel = 0x00000033
 	idYes         = 6
@@ -163,6 +169,18 @@ type tchit struct {
 	flags uint32
 }
 
+type toolinfo struct {
+	size     uint32
+	flags    uint32
+	hwnd     uintptr
+	id       uintptr
+	rect     wrect
+	inst     uintptr
+	text     uintptr
+	lParam   uintptr
+	reserved uintptr
+}
+
 type tabHook struct {
 	old uintptr
 	p   *panel
@@ -195,6 +213,8 @@ type panel struct {
 	dirty      map[string]bool
 	on         map[uintptr]bool
 	glyph      map[uintptr]string
+	tip        uintptr
+	tipText    map[uintptr][]uint16
 	himl       uintptr
 	selPath    string
 	selFile    bool
@@ -656,9 +676,10 @@ func openAbout() {
 }
 
 func openEditor(file string) {
-	p := &panel{kind: "editor", clicks: map[uintptr]func(){}, dataDir: uiCfg.Get().DataDir, dirty: map[string]bool{}, on: map[uintptr]bool{}, glyph: map[uintptr]string{}}
+	p := &panel{kind: "editor", clicks: map[uintptr]func(){}, dataDir: uiCfg.Get().DataDir, dirty: map[string]bool{}, on: map[uintptr]bool{}, glyph: map[uintptr]string{}, tipText: map[uintptr][]uint16{}}
 	p.hwnd = uintptr(frame("Editor", 1100, 720))
 	panels[p.hwnd] = p
+	p.tip = uintptr(create(p.hwnd, "tooltips_class32", "", wsPop|ttsAlways|ttsNoPrefix, 0, 0, 0, 0, 0))
 	note := p.iconBtn(p.hwnd, "New note", "file-plus", 8, 4)
 	folder := p.iconBtn(p.hwnd, "New folder", "folder-plus", 44, 4)
 	save := p.iconBtn(p.hwnd, "Save", "device-floppy", 80, 4)
@@ -836,7 +857,24 @@ func (p *panel) treeIcons() {
 func (p *panel) iconBtn(parent uintptr, title, name string, x, y int32) uintptr {
 	h := p.button(parent, title, x, y, iconBtnS, iconBtnS)
 	p.glyph[h] = name
+	p.addTip(h, title)
 	return h
+}
+
+func (p *panel) addTip(btn uintptr, title string) {
+	if p.tip == 0 {
+		return
+	}
+	u, _ := windows.UTF16FromString(title)
+	p.tipText[btn] = u
+	ti := toolinfo{
+		size:  uint32(unsafe.Sizeof(toolinfo{})),
+		flags: ttfIdHwnd | ttfSubclass,
+		hwnd:  p.hwnd,
+		id:    btn,
+		text:  uintptr(unsafe.Pointer(&p.tipText[btn][0])),
+	}
+	send(p.tip, ttmAddTool, 0, uintptr(unsafe.Pointer(&ti)))
 }
 
 func (p *panel) snipFmt(kind string) {
