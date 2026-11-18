@@ -81,8 +81,11 @@ func addNodes(parent *systray.MenuItem, dataDir string, nodes []snippet.Node) {
 			continue
 		}
 		icon := "clipboard"
-		if n.Action == "inject" {
-			icon = "keyboard"
+		for _, a := range snippet.ParseActions(n.Action) {
+			if a == "inject" {
+				icon = "keyboard"
+				break
+			}
 		}
 		it.SetIcon(menuIcon(icon))
 		if !n.Enabled {
@@ -100,10 +103,16 @@ func fireSnippet(dataDir, rel, action string) {
 		return
 	}
 	body := snippet.Parse(raw).Body
-	if action == "inject" {
-		_ = Inject(body)
-		return
+	copied := false
+	for _, a := range snippet.ParseActions(action) {
+		if a == "inject" {
+			_ = Inject(body)
+			continue
+		}
+		_ = SetClipboard(body)
+		copied = true
 	}
-	_ = SetClipboard(body)
-	NotifyCopied()
+	if copied {
+		NotifyCopied()
+	}
 }

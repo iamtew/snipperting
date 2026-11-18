@@ -637,6 +637,26 @@ func (p *panel) rebuildPrefs() {
 	p.layoutBulk()
 }
 
+// toggleBulkAction turns token on or off. Last remaining action stays. Both on → inject, clipboard.
+func toggleBulkAction(current, token string) string {
+	on := map[string]bool{}
+	for _, a := range snippet.ParseActions(current) {
+		on[a] = true
+	}
+	on[token] = !on[token]
+	if !on["inject"] && !on["clipboard"] {
+		return snippet.FormatActions(snippet.ParseActions(current))
+	}
+	var out []string
+	if on["inject"] {
+		out = append(out, "inject")
+	}
+	if on["clipboard"] {
+		out = append(out, "clipboard")
+	}
+	return snippet.FormatActions(out)
+}
+
 func (p *panel) addBulk(nodes []snippet.Node, depth int) {
 	for _, n := range nodes {
 		n := n
@@ -662,9 +682,14 @@ func (p *panel) addBulk(nodes []snippet.Node, depth int) {
 		}
 		lab := p.static(p.bulk, n.Name, 0, 0, 200, 24)
 		p.placed = append(p.placed, placed{hwnd: lab, row: row, col: 0, x: x})
-		act := n.Action
-		if act != "inject" {
-			act = "clipboard"
+		onInj, onClip := false, false
+		for _, a := range snippet.ParseActions(n.Action) {
+			if a == "inject" {
+				onInj = true
+			}
+			if a == "clipboard" {
+				onClip = true
+			}
 		}
 		st := "off"
 		if n.Enabled {
@@ -675,8 +700,8 @@ func (p *panel) addBulk(nodes []snippet.Node, depth int) {
 			hid = "hidden"
 		}
 		path := n.Path
-		inj := p.pushLike(p.bulk, "Inject", act == "inject")
-		clip := p.pushLike(p.bulk, "Clipboard", act == "clipboard")
+		inj := p.pushLike(p.bulk, "Inject", onInj)
+		clip := p.pushLike(p.bulk, "Clipboard", onClip)
 		sb := p.button(p.bulk, st, 0, 0, 64, 24)
 		hb := p.button(p.bulk, hid, 0, 0, 72, 24)
 		p.placed = append(p.placed,
@@ -686,11 +711,11 @@ func (p *panel) addBulk(nodes []snippet.Node, depth int) {
 			placed{hwnd: hb, row: row, col: 4},
 		)
 		p.clicks[inj] = func() {
-			_ = snippet.UpdateMeta(uiCfg.Get().DataDir, path, func(m *snippet.Meta) { m.Action = "inject" })
+			_ = snippet.UpdateMeta(uiCfg.Get().DataDir, path, func(m *snippet.Meta) { m.Action = toggleBulkAction(m.Action, "inject") })
 			p.rebuildPrefs()
 		}
 		p.clicks[clip] = func() {
-			_ = snippet.UpdateMeta(uiCfg.Get().DataDir, path, func(m *snippet.Meta) { m.Action = "clipboard" })
+			_ = snippet.UpdateMeta(uiCfg.Get().DataDir, path, func(m *snippet.Meta) { m.Action = toggleBulkAction(m.Action, "clipboard") })
 			p.rebuildPrefs()
 		}
 		p.clicks[sb] = func() {
