@@ -65,9 +65,9 @@ func attrID(n ast.Node) string {
 }
 
 func Page(title, md string, dark bool) string {
-	bg, fg, muted, chip, accent := "#f3f3f3", "#1a1a1a", "#5c5c5c", "#ececec", "#0067c0"
+	bg, fg, muted, chip, accent := "#8ECAE6", "#023047", "#219EBC", "#219EBC", "#FB8500"
 	if dark {
-		bg, fg, muted, chip, accent = "#202020", "#f3f3f3", "#b0b0b0", "#2b2b2b", "#60cdff"
+		bg, fg, muted, chip, accent = "#023047", "#8ECAE6", "#219EBC", "#219EBC", "#FFB703"
 	}
 	var toc strings.Builder
 	items := TOC(md)
