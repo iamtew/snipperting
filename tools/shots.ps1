@@ -22,7 +22,11 @@ public class ShotWin {
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string cls, string title);
+    [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr h, out RECT r);
+    [DllImport("user32.dll")] public static extern int MapWindowPoints(IntPtr from, IntPtr to, ref POINT pt, int c);
+    [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
     public struct RECT { public int Left, Top, Right, Bottom; }
+    public struct POINT { public int X, Y; }
     public static IntPtr FindFrame(string titlePrefix) {
         IntPtr found = IntPtr.Zero;
         EnumWindows((h, l) => {
@@ -67,7 +71,9 @@ if ($note) {
     $editFile = $note.FullName.Substring($dataDir.Length).TrimStart('\', '/')
 }
 
-$outDir = Join-Path $repo 'build\shots'
+[void][ShotWin]::SetProcessDPIAware()
+
+$outDir = Join-Path $repo 'docs\shots'
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
 $startArgs = @('--prefs', '--edit')
@@ -175,8 +181,23 @@ function Save-WindowShot([string]$titlePrefix, [string]$path) {
         $g.ReleaseHdc($hdc)
         $g.Dispose()
     }
-    $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
+    $cr = New-Object ShotWin+RECT
+    if (-not [ShotWin]::GetClientRect($hwnd, [ref]$cr)) {
+        throw "GetClientRect failed for $path"
+    }
+    $origin = New-Object ShotWin+POINT
+    [void][ShotWin]::MapWindowPoints($hwnd, [IntPtr]::Zero, [ref]$origin, 1)
+    $x = $origin.X - $r.Left
+    $y = $origin.Y - $r.Top
+    $cw = $cr.Right - $cr.Left
+    $ch = $cr.Bottom - $cr.Top
+    if ($x -lt 0 -or $y -lt 0 -or $cw -lt 8 -or $ch -lt 8 -or ($x + $cw) -gt $w -or ($y + $ch) -gt $h) {
+        throw "client crop out of range for $path"
+    }
+    $crop = $bmp.Clone([System.Drawing.Rectangle]::new($x, $y, $cw, $ch), $bmp.PixelFormat)
     $bmp.Dispose()
+    $crop.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
+    $crop.Dispose()
 }
 
 Save-WindowShot 'Preferences' (Join-Path $outDir 'preferences.png')

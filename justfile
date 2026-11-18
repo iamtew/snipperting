@@ -23,7 +23,7 @@ build: docs-logo
 run: build
     dist/snipperting.exe
 
-# Preferences + Editor PNGs into build/shots (quit snipperting first)
+# Preferences + Editor client-area PNGs into docs/shots (quit snipperting first)
 shots: build
     powershell.exe -NoLogo -STA -File tools/shots.ps1
 
