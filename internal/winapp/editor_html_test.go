@@ -19,7 +19,7 @@ func TestEditorHTMLHasWorker(t *testing.T) {
 		t.Fatal("editor.html must load Monaco from the mapped web root")
 	}
 	if bytes.Contains(b, []byte("/web/vendor/monaco")) {
-		t.Fatal("editor.html still uses the old HTTP prefix")
+		t.Fatal("editor.html must not use /web/vendor/monaco paths")
 	}
 	if !bytes.Contains(b, []byte("snipOpen")) {
 		t.Fatal("editor.html must expose snipOpen")
