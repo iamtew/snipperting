@@ -35,6 +35,7 @@ Footer items under a separator:
 - Exit
 
 Edit, Preferences, Help, and About are native windows. They use Settings-like colors (system accent, flat chrome). Theme is system / light / dark (default system, tracks Windows). Monaco and rendered markdown follow that same setting. Edit's right pane is one WebView2: Monaco for note tabs, rendered HTML for a Preview tab. Help's content pane is WebView2 showing rendered MANUAL.md (`NavigateToString`, no HTTP). The snippet list itself is the native tray menu.
+About shows the release version from the git tag at build (prefixed with v), the short commit hash, and `-dirty` when the working tree was dirty at build. Untagged builds show `vdev`.
 
 Tray items for snippets, folders, Edit, Preferences, and Help use vendored Tabler icons (rasterized to `.ico` for the native menu).
 
