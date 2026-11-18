@@ -14,6 +14,7 @@ Windows SysTray snippets app. Spec is the Bible: [docs/app-spec.md](docs/app-spe
 cmd/snipperting/main.go     process, mutex, tray
 internal/config             JSON config
 internal/snippet            ---- parser + data-dir tree
+internal/mdhtml             goldmark HTML + Help TOC
 internal/winapp             tray, native windows, Monaco child, clipboard, inject
 tools/png2ico               PNG → .ico (copies, does not touch assets/logo.png)
 tools/tabler                Tabler SVG → 16px .ico for the tray menu
