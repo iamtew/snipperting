@@ -882,18 +882,12 @@ func (p *panel) fillTree() {
 
 func (p *panel) addTree(parent uintptr, nodes []snippet.Node) {
 	for _, n := range nodes {
-		label := n.Label
-		if n.Type == "dir" {
-			label = n.Name
-		} else if label == "" {
-			label = n.Name
-		}
 		img := int32(0)
 		if n.Type == "file" {
 			img = 1
 		}
 		idx := len(p.nodes)
-		h := p.insertTree(parent, label, uintptr(idx), img)
+		h := p.insertTree(parent, n.Name, uintptr(idx), img)
 		p.nodes = append(p.nodes, tnode{path: n.Path, file: n.Type == "file", item: h})
 		if n.Type == "dir" {
 			p.addTree(h, n.Children)
