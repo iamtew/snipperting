@@ -39,7 +39,7 @@ func HTML(md string) string {
 	return buf.String()
 }
 
-func TOC(md string) []Heading {
+func headings(md string) []Heading {
 	src := []byte(md)
 	doc := gm.Parser().Parse(text.NewReader(src))
 	var out []Heading
@@ -80,7 +80,7 @@ func Page(title, md string, dark bool) string {
 		bg, fg, muted, chip, accent = "#023047", "#8ECAE6", "#219EBC", "#219EBC", "#FFB703"
 	}
 	var toc strings.Builder
-	items := TOC(md)
+	items := headings(md)
 	if len(items) > 0 {
 		toc.WriteString(`<nav class="toc"><p>Contents</p><ul>`)
 		for _, it := range items {

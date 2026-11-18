@@ -41,12 +41,12 @@ steps
 	if !strings.Contains(html, "<pre") || !strings.Contains(html, "code here") {
 		t.Fatalf("fence: %s", html)
 	}
-	toc := TOC(md)
-	if len(toc) != 3 {
-		t.Fatalf("toc %#v", toc)
+	heads := headings(md)
+	if len(heads) != 3 {
+		t.Fatalf("toc %#v", heads)
 	}
 	page := Page("Help", md, false)
-	for _, h := range toc {
+	for _, h := range heads {
 		if h.ID == "" {
 			t.Fatalf("empty id %#v", h)
 		}

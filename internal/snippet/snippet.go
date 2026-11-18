@@ -27,15 +27,15 @@ type Doc struct {
 }
 
 type Node struct {
-	Type     string `json:"type"`
-	Path     string `json:"path"`
-	Name     string `json:"name"`
-	Label    string `json:"label,omitempty"`
-	About    string `json:"about,omitempty"`
-	Action   string `json:"action,omitempty"`
-	Enabled  bool   `json:"enabled"`
-	Hidden   bool   `json:"hidden,omitempty"`
-	Children []Node `json:"children,omitempty"`
+	Type     string
+	Path     string
+	Name     string
+	Label    string
+	About    string
+	Action   string
+	Enabled  bool
+	Hidden   bool
+	Children []Node
 }
 
 func Parse(raw []byte) Doc {
@@ -97,7 +97,7 @@ func Encode(m Meta, body string) []byte {
 	return b.Bytes()
 }
 
-func ApplyMeta(raw []byte, edit func(*Meta)) []byte {
+func applyMeta(raw []byte, edit func(*Meta)) []byte {
 	d := Parse(raw)
 	edit(&d.Meta)
 	return Encode(d.Meta, d.Body)
@@ -328,7 +328,7 @@ func UpdateMeta(dataDir, rel string, edit func(*Meta)) error {
 	if err != nil {
 		return err
 	}
-	return Write(dataDir, rel, ApplyMeta(raw, edit))
+	return Write(dataDir, rel, applyMeta(raw, edit))
 }
 
 func CreateDir(dataDir, rel string) error {

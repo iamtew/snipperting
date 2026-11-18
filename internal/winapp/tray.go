@@ -65,7 +65,7 @@ func addMenuFooter(cfg *config.Store) {
 	addOpen("Help", "help")
 	addOpen("About", "about")
 	quit := systray.AddMenuItem("Exit", "Quit snipperting")
-	quit.SetIcon(menuIcon("logout"))
+	quit.SetIcon(chromeIcon("logout"))
 	quit.Click(func() { systray.Quit() })
 }
 
@@ -99,7 +99,7 @@ func appendNodeSig(b *strings.Builder, n snippet.Node) {
 
 func addNew(cfg *config.Store) {
 	it := systray.AddMenuItem("New", "")
-	it.SetIcon(menuIcon("file-plus"))
+	it.SetIcon(chromeIcon("file-plus"))
 	it.Click(func() { trayNew(cfg) })
 }
 
@@ -107,13 +107,13 @@ func addOpen(title, kind string) {
 	it := systray.AddMenuItem(title, "")
 	switch kind {
 	case "editor":
-		it.SetIcon(menuIcon("pencil"))
+		it.SetIcon(chromeIcon("pencil"))
 	case "prefs":
-		it.SetIcon(menuIcon("settings"))
+		it.SetIcon(chromeIcon("settings"))
 	case "help":
-		it.SetIcon(menuIcon("help"))
+		it.SetIcon(chromeIcon("help"))
 	case "about":
-		it.SetIcon(menuIcon("info-circle"))
+		it.SetIcon(chromeIcon("info-circle"))
 	}
 	it.Click(func() { Open(kind, "") })
 }
@@ -164,7 +164,7 @@ func addNodes(parent *systray.MenuItem, dataDir string, nodes []snippet.Node) {
 			it = parent.AddSubMenuItem(title, n.About)
 		}
 		if n.Type == "dir" {
-			it.SetIcon(menuIcon("folder"))
+			it.SetIcon(chromeIcon("folder"))
 			addNodes(it, dataDir, n.Children)
 			continue
 		}
@@ -175,7 +175,7 @@ func addNodes(parent *systray.MenuItem, dataDir string, nodes []snippet.Node) {
 				break
 			}
 		}
-		it.SetIcon(menuIcon(icon))
+		it.SetIcon(chromeIcon(icon))
 		if !n.Enabled {
 			it.Disable()
 			continue

@@ -79,10 +79,6 @@ var icoMarkdown []byte
 //go:embed icons/trash.ico
 var icoTrash []byte
 
-func menuIcon(name string) []byte {
-	return chromeIcon(name)
-}
-
 func chromeIcon(name string) []byte {
 	switch name {
 	case "clipboard":

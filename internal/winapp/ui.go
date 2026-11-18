@@ -155,6 +155,7 @@ var (
 	guiFont   uintptr
 	appIcon   uintptr
 	appIconSm uintptr
+	wordmarks = map[int32]uintptr{}
 )
 
 type openReq struct {
@@ -841,12 +842,25 @@ func (p *panel) showHelp() {
 	p.chrome.NavigateToString(mdhtml.Page("Help", mdhtml.InlineShotURIs(uiManual, uiShots), monacoDark()))
 }
 
+func wordmarkIcon(size int32) uintptr {
+	if h, ok := wordmarks[size]; ok {
+		return h
+	}
+	ico := findIco()
+	if ico == "" {
+		return 0
+	}
+	h := loadIcoSize(ico, size, size)
+	if h != 0 {
+		wordmarks[size] = h
+	}
+	return h
+}
+
 func placeWordmark(parent uintptr, x, y, size int32) {
-	if ico := findIco(); ico != "" {
-		if h := loadIcoSize(ico, size, size); h != 0 {
-			st := uintptr(create(parent, "STATIC", "", wsChild|wsVis|ssIcon, x, y, size, size, 0))
-			send(st, stmSetImage, imageIcon, h)
-		}
+	if h := wordmarkIcon(size); h != 0 {
+		st := uintptr(create(parent, "STATIC", "", wsChild|wsVis|ssIcon, x, y, size, size, 0))
+		send(st, stmSetImage, imageIcon, h)
 	}
 	tx := x + size + 16
 	ver, _ := aboutLines(uiVer, uiRev)

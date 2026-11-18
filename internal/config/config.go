@@ -19,7 +19,7 @@ type Store struct {
 	cur  File
 }
 
-func Path() (string, error) {
+func path() (string, error) {
 	exe, err := os.Executable()
 	if err != nil {
 		return "", err
@@ -27,7 +27,7 @@ func Path() (string, error) {
 	return filepath.Join(filepath.Dir(exe), "config.json"), nil
 }
 
-func DefaultDataDir() (string, error) {
+func defaultDataDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
@@ -36,7 +36,7 @@ func DefaultDataDir() (string, error) {
 }
 
 func Load() (*Store, error) {
-	p, err := Path()
+	p, err := path()
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (s *Store) normalize() error {
 		s.cur.Theme = "system"
 	}
 	if s.cur.DataDir == "" {
-		d, err := DefaultDataDir()
+		d, err := defaultDataDir()
 		if err != nil {
 			return err
 		}

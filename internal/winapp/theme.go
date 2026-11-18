@@ -16,7 +16,6 @@ const (
 	actCtxProcessDefault = 0x10
 	spiGetNCM            = 0x0029
 	dpiPerMonitorV2      = ^uintptr(3) // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
-	exClientEdge         = 0x00000200
 	tvsHasButtons        = 0x0001
 	tvsEditLabels        = 0x0008
 	tvsShowSelAlways     = 0x0020
