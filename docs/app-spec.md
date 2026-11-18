@@ -104,6 +104,6 @@ Empty data dir shows an empty-state line.
 ## `./docs` folder, website and documentation
 The `./docs` folder shall contain a website for GitHub pages.
 Think product page, explaining the application.
-The product page links to a rendered manual (`manual.html`). That page loads `MANUAL.md` in the browser and renders it (table of contents, heading anchors). `MANUAL.md` is the source.
-The manual shall also be shipped inside snipperting executable and be possible to viewed by user under Help menu item. Help renders MANUAL.md (not source) with a table of contents at the top whose links jump to heading anchors.
+The product page links to a rendered manual (`manual.html`). That page loads `MANUAL.md` in the browser and renders it (title and intro, then table of contents, heading anchors). `MANUAL.md` is the source.
+The manual shall also be shipped inside snipperting executable and be possible to viewed by user under Help menu item. Help renders MANUAL.md (not source) with the document title and intro first, then a table of contents whose links jump to heading anchors.
 

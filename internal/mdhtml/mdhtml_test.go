@@ -46,4 +46,10 @@ steps
 	if strings.Contains(page, `href="#title"`) {
 		t.Fatal("h1 should not be in toc")
 	}
+	h1 := strings.Index(page, "<h1")
+	nav := strings.Index(page, `<nav class="toc"`)
+	h2 := strings.Index(page, "<h2")
+	if h1 < 0 || nav < 0 || h2 < 0 || !(h1 < nav && nav < h2) {
+		t.Fatalf("want h1 then toc then h2, got h1=%d toc=%d h2=%d", h1, nav, h2)
+	}
 }

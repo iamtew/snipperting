@@ -78,11 +78,12 @@ func Page(title, md string, dark bool) string {
 		}
 		toc.WriteString(`</ul></nav>`)
 	}
+	preamble, rest := splitPreamble(HTML(md))
 	return fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>%s</title>
 <style>
 html,body{margin:0;background:%s;color:%s;font:16px/1.55 "Segoe UI",system-ui,sans-serif}
 main{max-width:42rem;margin:0 auto;padding:1.5rem 1.75rem 3rem}
-.toc{margin:0 0 2rem;padding:1rem 1.2rem;background:%s;border-radius:8px}
+.toc{margin:1.25rem 0 2rem;padding:1rem 1.2rem;background:%s;border-radius:8px}
 .toc p{margin:0 0 .5rem;font-weight:600}
 .toc ul{margin:0;padding-left:1.2rem}
 .toc a{color:%s;text-decoration:none}
@@ -94,6 +95,15 @@ code{font-family:Consolas,"Cascadia Code",monospace;background:%s;padding:.1em .
 pre{background:%s;padding:1rem;border-radius:8px;overflow:auto}
 pre code{background:none;padding:0}
 blockquote{margin:1rem 0;padding:.2rem 1rem;border-left:4px solid %s;color:%s}
-</style></head><body><main>%s<article>%s</article></main></body></html>`,
-		html.EscapeString(title), bg, fg, chip, accent, muted, accent, chip, chip, accent, muted, toc.String(), HTML(md))
+</style></head><body><main><article>%s%s%s</article></main></body></html>`,
+		html.EscapeString(title), bg, fg, chip, accent, muted, accent, chip, chip, accent, muted, preamble, toc.String(), rest)
+}
+
+// splitPreamble cuts rendered markdown at the first H2 so the title and intro sit above the TOC.
+func splitPreamble(body string) (preamble, rest string) {
+	i := strings.Index(body, "<h2")
+	if i < 0 {
+		return body, ""
+	}
+	return body[:i], body[i:]
 }

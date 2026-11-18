@@ -77,8 +77,8 @@
     <nav><a href="index.html">Home</a></nav>
   </header>
   <main>
-    <nav class="toc" id="toc" hidden></nav>
     <article id="md">Loading the manual…</article>
+    <nav class="toc" id="toc" hidden></nav>
   </main>
   <script>
     (async function () {
@@ -103,6 +103,9 @@
         if (items.length) {
           tocNav.innerHTML = "<p>Contents</p><ul>" + items.join("") + "</ul>";
           tocNav.hidden = false;
+          const firstH2 = article.querySelector("h2");
+          if (firstH2) article.insertBefore(tocNav, firstH2);
+          else article.appendChild(tocNav);
         }
       } catch (e) {
         article.className = "err";
