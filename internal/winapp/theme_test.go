@@ -30,7 +30,7 @@ func TestThemeLayout(t *testing.T) {
 }
 
 func TestChromeIconsDecode(t *testing.T) {
-	for _, name := range []string{"folder", "file", "file-plus", "folder-plus", "device-floppy", "bold", "italic", "strikethrough", "heading", "quote", "list", "list-numbers", "code", "link"} {
+	for _, name := range []string{"folder", "file", "file-plus", "folder-plus", "device-floppy", "bold", "italic", "strikethrough", "heading", "quote", "list", "list-numbers", "code", "link", "trash"} {
 		raw := chromeIcon(name)
 		if len(raw) <= 22 {
 			t.Fatalf("%s empty", name)
