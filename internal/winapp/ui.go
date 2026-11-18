@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"unsafe"
 
 	"github.com/jchv/go-webview2/pkg/edge"
@@ -66,29 +67,29 @@ const (
 	tviRoot       = ^uintptr(0xFFFF) // (HTREEITEM)-0x10000
 	tvmInsert     = 0x1132
 	tvmDelete     = 0x1101
-	tvmSelectItem   = 0x110B
-	tvmEditLabel    = 0x1141
-	tvmGetEdit      = 0x110F
-	tvmEndEdit      = 0x1116
-	wmKeyDown       = 0x0100
-	wmChar          = 0x0102
-	wmKillFocus     = 0x0008
-	wmGetDlgCode    = 0x0087
-	dlgcWantAll     = 0x0085 // WANTARROWS|WANTALLKEYS|WANTCHARS
-	vkReturn        = 0x0D
-	vkEscape        = 0x1B
-	tvmExpand       = 0x1102
-	tveExpand       = 2
-	tvgnCaret       = 9
-	tvifIcon        = 0x0027       // TEXT|IMAGE|SELECTEDIMAGE|PARAM
-	tvnSelChanged   = ^uint32(450) // TVN_SELCHANGEDW = -451
-	tvnBeginDrag    = ^uint32(455) // TVN_BEGINDRAGW = -456
-	tvnBeginLabel   = ^uint32(458) // TVN_BEGINLABELEDITW = -459
-	tvnEndLabel     = ^uint32(460) // TVN_ENDLABELEDITW = -461
-	tvnKeyDown      = ^uint32(411) // TVN_KEYDOWN = -412
-	nmRClick        = ^uint32(4)   // NM_RCLICK = -5
-	emSetSel        = 0x00B1
-	vkF2            = 0x71
+	tvmSelectItem = 0x110B
+	tvmEditLabel  = 0x1141
+	tvmGetEdit    = 0x110F
+	tvmEndEdit    = 0x1116
+	wmKeyDown     = 0x0100
+	wmChar        = 0x0102
+	wmKillFocus   = 0x0008
+	wmGetDlgCode  = 0x0087
+	dlgcWantAll   = 0x0085 // WANTARROWS|WANTALLKEYS|WANTCHARS
+	vkReturn      = 0x0D
+	vkEscape      = 0x1B
+	tvmExpand     = 0x1102
+	tveExpand     = 2
+	tvgnCaret     = 9
+	tvifIcon      = 0x0027       // TEXT|IMAGE|SELECTEDIMAGE|PARAM
+	tvnSelChanged = ^uint32(450) // TVN_SELCHANGEDW = -451
+	tvnBeginDrag  = ^uint32(455) // TVN_BEGINDRAGW = -456
+	tvnBeginLabel = ^uint32(458) // TVN_BEGINLABELEDITW = -459
+	tvnEndLabel   = ^uint32(460) // TVN_ENDLABELEDITW = -461
+	tvnKeyDown    = ^uint32(411) // TVN_KEYDOWN = -412
+	nmRClick      = ^uint32(4)   // NM_RCLICK = -5
+	emSetSel      = 0x00B1
+	vkF2          = 0x71
 	tvmHitTest    = 0x1111
 	tvgnDrop      = 8
 	tpmReturnCmd  = 0x0100
@@ -268,56 +269,56 @@ var (
 )
 
 type panel struct {
-	kind       string
-	hwnd       uintptr
-	clicks     map[uintptr]func()
-	dataEdit   uintptr
-	browse     uintptr
-	clipCheck  uintptr
-	themeSys   uintptr
-	themeLight uintptr
-	themeDark  uintptr
-	bulk       uintptr
-	placed     []placed
-	rows       int
-	scroll     int32
-	opened     map[string]bool
-	tree       uintptr
-	tabs       uintptr
-	host       uintptr
-	nodes      []tnode
-	open       []string
-	dirty      map[string]bool
-	on         map[uintptr]bool
-	glyph      map[uintptr]string
-	tip        uintptr
-	tipText    map[uintptr][]uint16
-	himl       uintptr
-	selPath    string
-	selFile    bool
-	curPath    string
-	pending    string
-	bodyEnd    bool
-	dropAfter  string
-	closing    bool
+	kind         string
+	hwnd         uintptr
+	clicks       map[uintptr]func()
+	dataEdit     uintptr
+	browse       uintptr
+	clipCheck    uintptr
+	themeSys     uintptr
+	themeLight   uintptr
+	themeDark    uintptr
+	bulk         uintptr
+	placed       []placed
+	rows         int
+	scroll       int32
+	opened       map[string]bool
+	tree         uintptr
+	tabs         uintptr
+	host         uintptr
+	nodes        []tnode
+	open         []string
+	dirty        map[string]bool
+	on           map[uintptr]bool
+	glyph        map[uintptr]string
+	tip          uintptr
+	tipText      map[uintptr][]uint16
+	himl         uintptr
+	selPath      string
+	selFile      bool
+	curPath      string
+	pending      string
+	bodyEnd      bool
+	dropAfter    string
+	closing      bool
 	allowEdit    bool
 	msgResult    uintptr
 	editItem     uintptr
 	labelCreate  bool
 	labelFile    bool
-	labelSrc      string
-	labelDest     string
-	labelTyped    string
-	labelEscaped  bool
-	labelQueued   bool
-	filling       bool
-	dragging   bool
-	dragPath   string
-	ready      bool
-	chrome     *edge.Chromium
-	dataDir    string
-	btnDel     uintptr
-	btnPreview uintptr
+	labelSrc     string
+	labelDest    string
+	labelTyped   string
+	labelEscaped bool
+	labelQueued  bool
+	filling      bool
+	dragging     bool
+	dragPath     string
+	ready        bool
+	chrome       *edge.Chromium
+	dataDir      string
+	btnDel       uintptr
+	btnPreview   uintptr
 }
 
 func StartUI(cfg *config.Store, manual string, shots map[string][]byte, version, rev string) {
@@ -539,6 +540,8 @@ func (p *panel) onMsg(hwnd, msg, wp, lp uintptr) bool {
 		}
 	case wmDestroy:
 		if hwnd == p.hwnd {
+			closeChrome(p.chrome)
+			p.chrome = nil
 			delete(panels, hwnd)
 			if p.bulk != 0 {
 				delete(panels, p.bulk)
@@ -595,18 +598,26 @@ func (p *panel) pickDataDir() {
 		return
 	}
 	cur := uiCfg.Get()
-	_ = uiCfg.Set(config.File{DataDir: dir, Theme: cur.Theme, ClipNotice: p.clipNotice()})
+	if err := uiCfg.Set(config.File{DataDir: dir, Theme: cur.Theme, ClipNotice: p.clipNotice()}); err != nil {
+		msgBox(p.hwnd, "Can't save that setting.", "Preferences", 0x10)
+		return
+	}
 	p.rebuildPrefs()
 }
 
 func (p *panel) saveClipNotice() {
 	cur := uiCfg.Get()
-	_ = uiCfg.Set(config.File{DataDir: cur.DataDir, Theme: cur.Theme, ClipNotice: p.clipNotice()})
+	if err := uiCfg.Set(config.File{DataDir: cur.DataDir, Theme: cur.Theme, ClipNotice: p.clipNotice()}); err != nil {
+		msgBox(p.hwnd, "Can't save that setting.", "Preferences", 0x10)
+	}
 }
 
 func (p *panel) applyTheme(name string) {
 	cur := uiCfg.Get()
-	_ = uiCfg.Set(config.File{DataDir: cur.DataDir, Theme: name, ClipNotice: p.clipNotice()})
+	if err := uiCfg.Set(config.File{DataDir: cur.DataDir, Theme: name, ClipNotice: p.clipNotice()}); err != nil {
+		msgBox(p.hwnd, "Can't save that setting.", "Preferences", 0x10)
+		return
+	}
 	p.markTheme(name)
 	reloadTheme()
 }
@@ -728,22 +739,26 @@ func (p *panel) addBulk(nodes []snippet.Node, depth int) {
 			placed{hwnd: hb, row: row, col: 4},
 		)
 		p.clicks[inj] = func() {
-			_ = snippet.UpdateMeta(uiCfg.Get().DataDir, path, func(m *snippet.Meta) { m.Action = toggleBulkAction(m.Action, "inject") })
-			p.rebuildPrefs()
+			p.bulkMeta(path, func(m *snippet.Meta) { m.Action = toggleBulkAction(m.Action, "inject") })
 		}
 		p.clicks[clip] = func() {
-			_ = snippet.UpdateMeta(uiCfg.Get().DataDir, path, func(m *snippet.Meta) { m.Action = toggleBulkAction(m.Action, "clipboard") })
-			p.rebuildPrefs()
+			p.bulkMeta(path, func(m *snippet.Meta) { m.Action = toggleBulkAction(m.Action, "clipboard") })
 		}
 		p.clicks[sb] = func() {
-			_ = snippet.UpdateMeta(uiCfg.Get().DataDir, path, func(m *snippet.Meta) { m.Enabled = !n.Enabled })
-			p.rebuildPrefs()
+			p.bulkMeta(path, func(m *snippet.Meta) { m.Enabled = !m.Enabled })
 		}
 		p.clicks[hb] = func() {
-			_ = snippet.UpdateMeta(uiCfg.Get().DataDir, path, func(m *snippet.Meta) { m.Hidden = !n.Hidden })
-			p.rebuildPrefs()
+			p.bulkMeta(path, func(m *snippet.Meta) { m.Hidden = !m.Hidden })
 		}
 	}
+}
+
+func (p *panel) bulkMeta(path string, edit func(*snippet.Meta)) {
+	if err := snippet.UpdateMeta(uiCfg.Get().DataDir, path, edit); err != nil {
+		msgBox(p.hwnd, "Can't update that note.", "Preferences", 0x10)
+		return
+	}
+	p.rebuildPrefs()
 }
 
 func (p *panel) layoutBulk() {
@@ -805,9 +820,7 @@ func openHelp() {
 	panels[p.hwnd] = p
 	p.host = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsClip, 8, 8, 704, 624, 0))
 	p.chrome = edge.NewChromium()
-	if local := os.Getenv("LOCALAPPDATA"); local != "" {
-		p.chrome.DataPath = filepath.Join(local, "snipperting", "webview")
-	}
+	p.chrome.DataPath = webviewDataPath("help")
 	if !p.chrome.Embed(p.host) {
 		p.chrome = nil
 		ed := p.edit(p.hwnd, "", 8, 8, 688, 584, true)
@@ -900,9 +913,7 @@ func openEditor(file string, bodyEnd bool) {
 	p.host = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsClip, paneX, barH+tabH, 800, 612, 0))
 	p.fillTree()
 	p.chrome = edge.NewChromium()
-	if local := os.Getenv("LOCALAPPDATA"); local != "" {
-		p.chrome.DataPath = filepath.Join(local, "snipperting", "webview")
-	}
+	p.chrome.DataPath = webviewDataPath("edit")
 	p.chrome.MessageCallback = func(msg string) {
 		var m struct {
 			T     string `json:"t"`
@@ -931,15 +942,24 @@ func openEditor(file string, bodyEnd bool) {
 			return
 		}
 		if m.T == "saveall" {
+			failed := false
 			for _, f := range m.Files {
 				if f.P != "" && !isPreview(f.P) {
-					_ = snippet.Write(p.dataDir, f.P, []byte(f.V))
+					if err := snippet.Write(p.dataDir, f.P, []byte(f.V)); err != nil {
+						failed = true
+						continue
+					}
 					p.dirty[f.P] = false
 					p.refreshTab(f.P)
 				}
 			}
+			if failed {
+				p.closing = false
+				msgBox(p.hwnd, "Can't save that note.", "Editor", 0x10)
+				return
+			}
 			if p.closing {
-				destroy(p.hwnd)
+				post(p.hwnd, wmClose, 0, 0)
 			}
 			return
 		}
@@ -949,7 +969,11 @@ func openEditor(file string, bodyEnd bool) {
 				rel = p.curPath
 			}
 			if rel != "" && !isPreview(rel) {
-				_ = snippet.Write(p.dataDir, rel, []byte(m.V))
+				if err := snippet.Write(p.dataDir, rel, []byte(m.V)); err != nil {
+					p.closing = false
+					msgBox(p.hwnd, "Can't save that note.", "Editor", 0x10)
+					return
+				}
 				p.dirty[rel] = false
 				p.refreshTab(rel)
 			}
@@ -958,7 +982,7 @@ func openEditor(file string, bodyEnd bool) {
 				p.removeTab(rel)
 			}
 			if p.closing {
-				destroy(p.hwnd)
+				post(p.hwnd, wmClose, 0, 0)
 			}
 		}
 	}
@@ -1990,6 +2014,7 @@ func (p *panel) deleteSel() {
 		return
 	}
 	if err := snippet.Remove(p.dataDir, rel); err != nil {
+		msgBox(p.hwnd, "Can't delete that.", "Editor", 0x10)
 		return
 	}
 	open := append([]string{}, p.open...)
@@ -2219,6 +2244,22 @@ func setScroll(hwnd uintptr, max int32, page uint32, pos int32) {
 		nPos, nTrackPos int32
 	}{cbSize: 28, fMask: 7, nMax: max, nPage: page, nPos: pos}
 	pScroll.Call(hwnd, 1, uintptr(unsafe.Pointer(&raw)), 1)
+}
+
+func closeChrome(c *edge.Chromium) {
+	if c == nil {
+		return
+	}
+	ctrl := c.GetController()
+	if ctrl == nil {
+		return
+	}
+	type iface struct{ vtbl *[32]uintptr }
+	p := (*iface)(unsafe.Pointer(ctrl))
+	if p.vtbl == nil {
+		return
+	}
+	_, _, _ = syscall.SyscallN((*p.vtbl)[24], uintptr(unsafe.Pointer(ctrl)))
 }
 
 func findIco() string {

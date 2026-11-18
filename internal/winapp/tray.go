@@ -27,6 +27,7 @@ func RunTray(icon []byte, cfg *config.Store) {
 		systray.SetOnClick(openNative)
 		systray.SetOnRClick(openNative)
 	}, func() {
+		ReleaseInstance()
 		os.Exit(0)
 	})
 }

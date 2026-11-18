@@ -224,12 +224,7 @@ func appsDark() bool {
 }
 
 func loadPalette() {
-	if uiPal.bgBrush != 0 {
-		pDeleteObj.Call(uiPal.bgBrush)
-		pDeleteObj.Call(uiPal.fieldBrush)
-		pDeleteObj.Call(uiPal.accBrush)
-		pDeleteObj.Call(uiPal.ruleBrush)
-	}
+	oldBg, oldField, oldAcc, oldRule := uiPal.bgBrush, uiPal.fieldBrush, uiPal.accBrush, uiPal.ruleBrush
 	uiPal.dark = wantDark()
 	uiPal.rule = rgb(0x21, 0x9e, 0xbc)
 	uiPal.accentText = rgb(0x02, 0x30, 0x47)
@@ -247,6 +242,15 @@ func loadPalette() {
 	uiPal.fieldBrush, _, _ = pCreateBrush.Call(uintptr(uiPal.field))
 	uiPal.accBrush, _, _ = pCreateBrush.Call(uintptr(uiPal.accent))
 	uiPal.ruleBrush, _, _ = pCreateBrush.Call(uintptr(uiPal.rule))
+	if uiHwnd != 0 && uiPal.bgBrush != 0 {
+		pClassLong.Call(uiHwnd, gclpBg, uiPal.bgBrush)
+	}
+	if oldBg != 0 {
+		pDeleteObj.Call(oldBg)
+		pDeleteObj.Call(oldField)
+		pDeleteObj.Call(oldAcc)
+		pDeleteObj.Call(oldRule)
+	}
 }
 
 func classBrush() uintptr {

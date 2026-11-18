@@ -7,6 +7,14 @@ import (
 
 const editorHost = "snipperting.example"
 
+func webviewDataPath(kind string) string {
+	local := os.Getenv("LOCALAPPDATA")
+	if local == "" {
+		return ""
+	}
+	return filepath.Join(local, "snipperting", "webview-"+kind)
+}
+
 func findWebRoot() string {
 	var candidates []string
 	if exe, err := os.Executable(); err == nil {
