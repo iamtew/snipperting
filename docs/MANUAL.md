@@ -39,14 +39,18 @@ Under the line at the bottom:
 
 ## Edit your snippets
 
-Open **Edit** from the tray. The left side is a file tree of your snippets folder. Folders are listed first, then files. Hidden snippets still show up here so you can find them.
+Open **Edit** from the tray. The left side is a file tree of your snippets folder. Folders are listed first, then files. Names are the real file and folder names on disk (not the menu label). Hidden snippets still show up here so you can find them.
 
-On the explorer row: **New note**, **New folder**, and **Save** on the left; **Delete** on the right.
+On the explorer row: **New note**, **New folder**, and **Save** on the left; **Delete** on the right. Right-click the tree for the same actions, plus **Rename**.
 
 - New note and New folder land in the folder you selected, or in the same folder as the selected file.
 - A new note is a Markdown file with a small header on top. It starts as clipboard, enabled, and visible on the menu.
 - Save writes the open note (or press Ctrl+S). The floppy icon does the same.
+- Rename changes the file or folder name. Notes keep a `.md` suffix if you leave it off.
+- Drag a file or folder onto a folder to move it. Drop on a file puts it in that file’s folder. Drop on empty space is the snippets folder root.
 - Delete asks Yes/No, then removes the selected note or folder. A folder takes everything inside it. Open tabs for those files close.
+
+With no note open, the right side matches the window theme and tells you to open a note from the list.
 
 You can keep several notes open as tabs. Close a tab with the × on the tab. If you have unsaved changes, you get a chance to keep them before a tab or the window goes away.
 
