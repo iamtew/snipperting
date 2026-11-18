@@ -49,7 +49,7 @@ Click the tray icon for a native Windows menu (no extra window).
 
 ## Editor
 
-Edit opens a native window. The file tree is native (all `.md` files and folders), with indent and file/folder icons. New note, New folder, and Save are icon buttons on that explorer. New note and New folder land in the selected folder, or next to the selected file. Tabs keep several notes open; close a tab with the × on the tab, or close the window. Unsaved notes prompt before discard. Ctrl+S still saves the active tab. A markdown format bar wraps the selection (bold, italic, lists, code, link, and so on); click again to unwrap. The text area is Monaco inside that window. Save writes the `.md` file, header included. Monaco follows the Preferences theme.
+Edit opens a native window. The file tree is native (all `.md` files and folders), with indent and file/folder icons. New note, New folder, and Delete are icon buttons on that explorer. New note and New folder land in the selected folder, or next to the selected file. Delete asks Yes/No, then removes the selected note or folder (folders include their contents). Tabs keep several notes open; close a tab with the × on the tab, or close the window. Unsaved notes prompt before discard. Ctrl+S saves the active tab; there is also a Save icon on the format bar. A markdown format bar wraps the selection (bold, italic, lists, code, link, and so on); click again to unwrap. The text area is Monaco inside that window. Save writes the `.md` file, header included. Monaco follows the Preferences theme.
 
 ## Preferences
 
