@@ -15,22 +15,20 @@ test:
 # copy logos and build dist/snipperting.exe
 build: docs-logo
     if (!(Test-Path dist)) { New-Item -ItemType Directory dist | Out-Null }
-    if (!(Test-Path web)) { New-Item -ItemType Directory web | Out-Null }
-    Copy-Item -Force assets/logo.png web/logo.png
     go build {{goflags}} -o dist/snipperting.exe ./cmd/snipperting
 
 # build then start the tray app
 run: build
     dist/snipperting.exe
 
-# derive build/snipperting.ico from assets/logo.png (original stays)
+# derive build/snipperting.ico from assets/logo.svg (original stays)
 icon:
     if (!(Test-Path build)) { New-Item -ItemType Directory build | Out-Null }
-    go run ./tools/png2ico assets/logo.png build/snipperting.ico
+    go run ./tools/png2ico assets/logo.svg build/snipperting.ico
 
-# copy assets/logo.png into docs/ for GitHub Pages (original stays)
+# copy assets/logo.svg into docs/ for GitHub Pages (original stays)
 docs-logo:
-    Copy-Item -Force assets/logo.png docs/logo.png
+    Copy-Item -Force assets/logo.svg docs/logo.svg
 
 # rasterize web/vendor/tabler/*.svg to 24px ico for tray and editor chrome
 tabler:
