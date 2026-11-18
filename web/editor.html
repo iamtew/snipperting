@@ -4,12 +4,16 @@
   <meta charset="utf-8">
   <style>
 html,body{margin:0;height:100%;overflow:hidden;background:#8ECAE6;color:#023047}
+body{display:flex;flex-direction:column}
 @media (prefers-color-scheme:dark){html,body{background:#023047;color:#8ECAE6}}
 html.light,html.light body{background:#8ECAE6;color:#023047}
 html.dark,html.dark body{background:#023047;color:#8ECAE6}
-#m{display:none;height:100%}
-#e{display:flex;align-items:center;justify-content:center;height:100%;padding:2rem;box-sizing:border-box;font:16px/1.55 "Segoe UI",system-ui,sans-serif;color:#219EBC;text-align:center}
-#p{display:none;height:100%;overflow:auto;padding:1.5rem 1.75rem 3rem;box-sizing:border-box;font:16px/1.55 "Segoe UI",system-ui,sans-serif;background:#8ECAE6;color:#023047}
+#m{display:none;flex:1;min-height:0}
+#s{display:none;flex:none;height:22px;align-items:center;justify-content:flex-end;gap:1.25rem;padding:0 12px;box-sizing:border-box;font:12px/22px "Segoe UI",system-ui,sans-serif;color:#219EBC;border-top:1px solid #219EBC;background:#8ECAE6}
+html.dark #s{background:#023047;color:#8ECAE6}
+@media (prefers-color-scheme:dark){html:not(.light) #s{background:#023047;color:#8ECAE6}}
+#e{display:flex;flex:1;align-items:center;justify-content:center;padding:2rem;box-sizing:border-box;font:16px/1.55 "Segoe UI",system-ui,sans-serif;color:#219EBC;text-align:center}
+#p{display:none;flex:1;min-height:0;overflow:auto;padding:1.5rem 1.75rem 3rem;box-sizing:border-box;font:16px/1.55 "Segoe UI",system-ui,sans-serif;background:#8ECAE6;color:#023047}
 #p.dark{background:#023047;color:#8ECAE6}
 #p h2{border-bottom:1px solid #219EBC;padding-bottom:.3rem}
 #p a{color:#FB8500}
@@ -23,6 +27,7 @@ html.dark,html.dark body{background:#023047;color:#8ECAE6}
 </head>
 <body>
 <div id="m"></div>
+<div id="s"><span id="spos"></span><span>UTF-8</span><span id="seol"></span><span>Markdown</span></div>
 <div id="e">Open a note from the list on the left.</div>
 <div id="p"></div>
 <script src="/vendor/monaco/loader.js" onerror="document.body.textContent='Monaco missing. Run: just vendor-monaco'"></script>
@@ -86,9 +91,28 @@ require(["vs/editor/editor.main"], function () {
     monaco.editor.setTheme(dark ? "snip-dark" : "snip-light");
   }
 
+  function paintStatus() {
+    const m = editor.getModel();
+    const bar = document.getElementById("s");
+    if (!m) {
+      bar.style.display = "none";
+      return;
+    }
+    const sel = editor.getSelection();
+    const pos = sel.getPosition();
+    let loc = "Ln " + pos.lineNumber + ", Col " + pos.column;
+    if (!sel.isEmpty()) {
+      loc += " (" + m.getValueInRange(sel).length + " selected)";
+    }
+    document.getElementById("spos").textContent = loc;
+    document.getElementById("seol").textContent = m.getEOL() === "\r\n" ? "CRLF" : "LF";
+    bar.style.display = "flex";
+  }
+
   function showIdle() {
     document.getElementById("p").style.display = "none";
     document.getElementById("m").style.display = "none";
+    document.getElementById("s").style.display = "none";
     document.getElementById("e").style.display = "flex";
     editor.setModel(null);
   }
@@ -97,6 +121,7 @@ require(["vs/editor/editor.main"], function () {
     document.getElementById("p").style.display = "none";
     document.getElementById("e").style.display = "none";
     document.getElementById("m").style.display = "block";
+    paintStatus();
   }
 
   window.snipIdle = function (dark) {
@@ -116,6 +141,7 @@ require(["vs/editor/editor.main"], function () {
       });
     }
     editor.setModel(m);
+    paintStatus();
   };
 
   window.snipSwitch = function (path, dark) {
@@ -123,11 +149,13 @@ require(["vs/editor/editor.main"], function () {
     if (dark === true || dark === false) theme(dark);
     const m = models[path];
     if (m) editor.setModel(m);
+    paintStatus();
   };
 
   window.snipPreview = function (html, dark) {
     theme(dark);
     document.getElementById("m").style.display = "none";
+    document.getElementById("s").style.display = "none";
     document.getElementById("e").style.display = "none";
     const el = document.getElementById("p");
     el.className = dark ? "dark" : "";
@@ -161,6 +189,7 @@ require(["vs/editor/editor.main"], function () {
       window.chrome.webview.postMessage(JSON.stringify({ t: "dirty", p: newPath }));
     });
     if (was) editor.setModel(n);
+    paintStatus();
   };
 
   window.snipSet = function (text, dark) {
@@ -254,6 +283,8 @@ require(["vs/editor/editor.main"], function () {
     return true;
   };
 
+  editor.onDidChangeCursorSelection(paintStatus);
+  editor.onDidChangeModel(paintStatus);
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function () {
     window.snipGet();
   });

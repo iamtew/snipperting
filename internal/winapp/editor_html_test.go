@@ -42,4 +42,10 @@ func TestEditorHTMLHasWorker(t *testing.T) {
 	if !bytes.Contains(b, []byte("Open a note from the list on the left.")) {
 		t.Fatal("editor.html must show empty-pane copy")
 	}
+	if !bytes.Contains(b, []byte(`id="s"`)) {
+		t.Fatal("editor.html must have a status bar")
+	}
+	if !bytes.Contains(b, []byte("Ln ")) || !bytes.Contains(b, []byte("UTF-8")) || !bytes.Contains(b, []byte("Markdown")) {
+		t.Fatal("editor.html status bar must show Ln, UTF-8, Markdown")
+	}
 }
