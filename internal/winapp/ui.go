@@ -2,6 +2,7 @@ package winapp
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -1375,7 +1376,7 @@ func joinRel(dir, name string) string {
 }
 
 func (p *panel) newFolder() {
-	name, ok := askName(p.hwnd, "New folder")
+	name, ok := askName(p.hwnd, "New folder", "")
 	if !ok {
 		return
 	}
@@ -1393,7 +1394,7 @@ func (p *panel) newFolder() {
 }
 
 func (p *panel) newNote() {
-	name, ok := askName(p.hwnd, "New note")
+	name, ok := askName(p.hwnd, "New note", "")
 	if !ok {
 		return
 	}
@@ -1445,13 +1446,106 @@ func (p *panel) deleteSel() {
 	p.fillTree()
 }
 
-func askName(owner uintptr, title string) (string, bool) {
+func remapRel(old, neu, p string) string {
+	if p == old {
+		return neu
+	}
+	if old != "" && strings.HasPrefix(p, old+"/") {
+		return neu + p[len(old):]
+	}
+	return p
+}
+
+func remapStored(old, neu, stored string) string {
+	if isPreview(stored) {
+		return previewOf(remapRel(old, neu, previewSource(stored)))
+	}
+	return remapRel(old, neu, stored)
+}
+
+func (p *panel) renameSel() {
+	rel := p.selPath
+	if rel == "" {
+		return
+	}
+	cur := path.Base(filepath.ToSlash(rel))
+	name, ok := askName(p.hwnd, "Rename", cur)
+	if !ok {
+		return
+	}
+	name, ok = leafName(name)
+	if !ok {
+		return
+	}
+	if p.selFile && !strings.EqualFold(filepath.Ext(name), ".md") {
+		name = strings.TrimSuffix(name, filepath.Ext(name)) + ".md"
+	}
+	dest := joinRel(createParent(rel, p.selFile), name)
+	if dest == rel {
+		return
+	}
+	if err := snippet.Move(p.dataDir, rel, dest); err != nil {
+		msg := "Can't rename there."
+		if errors.Is(err, os.ErrExist) {
+			msg = "A file or folder with that name already exists."
+		}
+		msgBox(p.hwnd, msg, "Editor", 0x10)
+		return
+	}
+	p.afterMove(rel, dest)
+}
+
+func (p *panel) afterMove(old, neu string) {
+	if p.chrome != nil && p.ready {
+		for _, t := range p.open {
+			if isPreview(t) {
+				continue
+			}
+			n := remapRel(old, neu, t)
+			if n == t {
+				continue
+			}
+			oldJ, _ := json.Marshal(t)
+			newJ, _ := json.Marshal(n)
+			p.chrome.Eval(fmt.Sprintf("window.snipMove&&window.snipMove(%s,%s)", string(oldJ), string(newJ)))
+		}
+	}
+	next := map[string]bool{}
+	for k, v := range p.dirty {
+		next[remapStored(old, neu, k)] = v
+	}
+	p.dirty = next
+	for i, t := range p.open {
+		p.open[i] = remapStored(old, neu, t)
+	}
+	p.selPath = remapRel(old, neu, p.selPath)
+	p.curPath = remapStored(old, neu, p.curPath)
+	p.fillTree()
+	p.selectTree(p.selPath)
+	for _, t := range p.open {
+		p.refreshTab(t)
+	}
+	if p.curPath == "" {
+		setText(p.hwnd, "Editor")
+		return
+	}
+	if isPreview(p.curPath) {
+		setText(p.hwnd, "Editor — Preview · "+previewSource(p.curPath))
+		return
+	}
+	setText(p.hwnd, "Editor — "+p.curPath)
+}
+
+func askName(owner uintptr, title, initial string) (string, bool) {
 	p := &panel{kind: "prompt", clicks: map[uintptr]func(){}, on: map[uintptr]bool{}}
 	p.hwnd = create(owner, "", title, 0x90C80000, 200, 200, 360, 140, 0)
 	applyFrame(p.hwnd)
 	panels[p.hwnd] = p
 	p.static(p.hwnd, "Name", 12, 12, 80, 18)
 	p.dataEdit = p.edit(p.hwnd, "", 12, 36, 320, 24, false)
+	if initial != "" {
+		setText(p.dataEdit, initial)
+	}
 	ok := p.button(p.hwnd, "OK", 168, 72, 72, 26)
 	cancel := p.button(p.hwnd, "Cancel", 248, 72, 80, 26)
 	p.clicks[ok] = func() {

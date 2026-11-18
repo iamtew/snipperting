@@ -292,6 +292,35 @@ func Remove(dataDir, rel string) error {
 	return os.Remove(p)
 }
 
+func Move(dataDir, srcRel, destRel string) error {
+	srcRel = filepath.ToSlash(strings.TrimPrefix(srcRel, "/"))
+	destRel = filepath.ToSlash(strings.TrimPrefix(destRel, "/"))
+	if srcRel == "" || destRel == "" {
+		return os.ErrInvalid
+	}
+	src, err := JoinUnder(dataDir, srcRel)
+	if err != nil {
+		return err
+	}
+	dest, err := JoinUnder(dataDir, destRel)
+	if err != nil {
+		return err
+	}
+	sep := string(os.PathSeparator)
+	srcLow := strings.ToLower(src)
+	destLow := strings.ToLower(dest)
+	if destLow == srcLow || strings.HasPrefix(destLow, srcLow+sep) {
+		return os.ErrInvalid
+	}
+	if _, err := os.Stat(dest); err == nil {
+		return os.ErrExist
+	}
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return err
+	}
+	return os.Rename(src, dest)
+}
+
 func CreateFile(dataDir, rel string) error {
 	if !strings.EqualFold(filepath.Ext(rel), ".md") {
 		rel = strings.TrimSuffix(rel, filepath.Ext(rel)) + ".md"

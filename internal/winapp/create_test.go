@@ -22,6 +22,21 @@ func TestCreateParent(t *testing.T) {
 	}
 }
 
+func TestRemapRel(t *testing.T) {
+	if remapRel("a.md", "b.md", "a.md") != "b.md" {
+		t.Fatal("file")
+	}
+	if remapRel("old", "neu", "old/n.md") != "neu/n.md" {
+		t.Fatal("child")
+	}
+	if remapStored("a.md", "b.md", previewOf("a.md")) != previewOf("b.md") {
+		t.Fatal("preview")
+	}
+	if remapRel("a", "b", "other.md") != "other.md" {
+		t.Fatal("other")
+	}
+}
+
 func TestPreviewTab(t *testing.T) {
 	if isPreview("note.md") || !isPreview(previewOf("note.md")) {
 		t.Fatal("isPreview")

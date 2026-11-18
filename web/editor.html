@@ -148,6 +148,21 @@ require(["vs/editor/editor.main"], function () {
     delete models[path];
   };
 
+  window.snipMove = function (oldPath, newPath) {
+    const m = models[oldPath];
+    if (!m) return;
+    const text = m.getValue();
+    const was = editor.getModel() === m;
+    m.dispose();
+    delete models[oldPath];
+    const n = monaco.editor.createModel(text, "markdown", uri(newPath));
+    models[newPath] = n;
+    n.onDidChangeContent(function () {
+      window.chrome.webview.postMessage(JSON.stringify({ t: "dirty", p: newPath }));
+    });
+    if (was) editor.setModel(n);
+  };
+
   window.snipSet = function (text, dark) {
     showMonaco();
     theme(dark);
