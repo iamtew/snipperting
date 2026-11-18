@@ -19,6 +19,24 @@ func TestManualHTMLLoadsMarkdown(t *testing.T) {
 	}
 }
 
+func TestPagesFavicon(t *testing.T) {
+	need := [][]byte{
+		[]byte(`rel="icon"`),
+		[]byte("logo.svg"),
+	}
+	for _, name := range []string{"index.html", "manual.html"} {
+		b, err := os.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, n := range need {
+			if !bytes.Contains(b, n) {
+				t.Fatalf("%s must contain %s", name, n)
+			}
+		}
+	}
+}
+
 func TestPagesGitHubLinks(t *testing.T) {
 	need := [][]byte{
 		[]byte("https://github.com/iamtew/snipperting"),
