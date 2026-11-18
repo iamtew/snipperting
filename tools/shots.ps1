@@ -21,6 +21,7 @@ public class ShotWin {
     [DllImport("user32.dll")] public static extern bool EnumWindows(EnumCB cb, IntPtr l);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string cls, string title);
     public struct RECT { public int Left, Top, Right, Bottom; }
     public static IntPtr FindFrame(string titlePrefix) {
         IntPtr found = IntPtr.Zero;
@@ -117,37 +118,40 @@ while ($expanded -lt $maxExpand) {
     Start-Sleep -Milliseconds 400
 }
 
-$expandPat = [System.Windows.Automation.ExpandCollapsePattern]::Pattern
-$collapsedState = [System.Windows.Automation.ExpandCollapseState]::Collapsed
+# SysTreeView32: TVM_EXPAND on items that have children (folders). No names.
+$editorHwnd = [ShotWin]::FindFrame('Editor')
+if ($editorHwnd -eq [IntPtr]::Zero) { throw 'Editor closed' }
+$treeHwnd = [ShotWin]::FindWindowEx($editorHwnd, [IntPtr]::Zero, 'SysTreeView32', $null)
+$tvmGetNext = [uint32]0x110A
+$tvmExpandMsg = [uint32]0x1102
+$tvgnRoot = [IntPtr]0
+$tvgnNext = [IntPtr]1
+$tvgnChild = [IntPtr]4
+$tveExpand = [IntPtr]2
+function Get-TreeItem([IntPtr]$tree, [IntPtr]$flag, [IntPtr]$item) {
+    return [ShotWin]::SendMessage($tree, $tvmGetNext, $flag, $item)
+}
 $treeExpanded = 0
-while ($treeExpanded -lt $maxExpand) {
-    $editorHwnd = [ShotWin]::FindFrame('Editor')
-    if ($editorHwnd -eq [IntPtr]::Zero) { throw 'Editor closed' }
-    $ed = [System.Windows.Automation.AutomationElement]::FromHandle($editorHwnd)
-    $tree = $null
-    foreach ($el in $ed.FindAll($scopeDesc, [System.Windows.Automation.Condition]::TrueCondition)) {
-        if ($el.Current.ClassName -eq 'SysTreeView32') {
-            $tree = $el
-            break
+$pending = New-Object System.Collections.Queue
+if ($treeHwnd -ne [IntPtr]::Zero) {
+    $rootItem = Get-TreeItem $treeHwnd $tvgnRoot ([IntPtr]::Zero)
+    if ($rootItem -ne [IntPtr]::Zero) { $pending.Enqueue($rootItem) }
+}
+while ($pending.Count -gt 0 -and $treeExpanded -lt $maxExpand) {
+    $item = [IntPtr]$pending.Dequeue()
+    $child = Get-TreeItem $treeHwnd $tvgnChild $item
+    if ($child -ne [IntPtr]::Zero) {
+        [void][ShotWin]::SendMessage($treeHwnd, $tvmExpandMsg, $tveExpand, $item)
+        $treeExpanded++
+        Start-Sleep -Milliseconds 200
+        $child = Get-TreeItem $treeHwnd $tvgnChild $item
+        while ($child -ne [IntPtr]::Zero) {
+            $pending.Enqueue($child)
+            $child = Get-TreeItem $treeHwnd $tvgnNext $child
         }
     }
-    if (-not $tree) { break }
-    $hit = $null
-    foreach ($el in $tree.FindAll($scopeDesc, [System.Windows.Automation.Condition]::TrueCondition)) {
-        try {
-            $pat = $el.GetCurrentPattern($expandPat)
-        } catch {
-            continue
-        }
-        if ($pat.Current.ExpandCollapseState -eq $collapsedState) {
-            $hit = $pat
-            break
-        }
-    }
-    if (-not $hit) { break }
-    $hit.Expand()
-    $treeExpanded++
-    Start-Sleep -Milliseconds 400
+    $sib = Get-TreeItem $treeHwnd $tvgnNext $item
+    if ($sib -ne [IntPtr]::Zero) { $pending.Enqueue($sib) }
 }
 
 function Save-WindowShot([string]$titlePrefix, [string]$path) {
