@@ -68,9 +68,11 @@ const (
 	tvnSelChanged = ^uint32(450) // TVN_SELCHANGEDW = -451
 	ilcColor32    = 0x20
 	sideW         = int32(260)
+	paneX         = 8 + sideW + 8
 	barH          = int32(40)
 	tabH          = int32(28)
 	iconBtnS      = int32(32)
+	iconGap       = int32(36)
 	iconPx        = 24
 	previewPrefix = "preview:"
 
@@ -237,6 +239,8 @@ type panel struct {
 	ready      bool
 	chrome     *edge.Chromium
 	dataDir    string
+	btnDel     uintptr
+	btnPreview uintptr
 }
 
 func StartUI(cfg *config.Store, manual, version string) {
@@ -727,14 +731,14 @@ func openEditor(file string) {
 	p.tip = uintptr(create(p.hwnd, "tooltips_class32", "", wsPop|ttsAlways|ttsNoPrefix, 0, 0, 0, 0, 0))
 	send(p.tip, ttmSetMaxTip, 0, 400)
 	note := p.iconBtn(p.hwnd, "New Note", "file-plus", 8, 4)
-	folder := p.iconBtn(p.hwnd, "New Folder", "folder-plus", 44, 4)
-	save := p.iconBtn(p.hwnd, "Save", "device-floppy", 80, 4)
-	del := p.iconBtn(p.hwnd, "Delete", "trash", 116, 4)
+	folder := p.iconBtn(p.hwnd, "New Folder", "folder-plus", 8+iconGap, 4)
+	save := p.iconBtn(p.hwnd, "Save", "device-floppy", 8+iconGap*2, 4)
+	p.btnDel = p.iconBtn(p.hwnd, "Delete", "trash", 8, 4)
 	p.clicks[note] = p.newNote
 	p.clicks[folder] = p.newFolder
 	p.clicks[save] = p.saveActive
-	p.clicks[del] = p.deleteSel
-	x := int32(276)
+	p.clicks[p.btnDel] = p.deleteSel
+	x := paneX
 	for _, f := range []struct{ title, icon, kind string }{
 		{"Bold", "bold", "bold"},
 		{"Italic", "italic", "italic"},
@@ -749,18 +753,19 @@ func openEditor(file string) {
 		b := p.iconBtn(p.hwnd, f.title, f.icon, x, 4)
 		kind := f.kind
 		p.clicks[b] = func() { p.snipFmt(kind) }
-		x += 36
+		x += iconGap
 	}
-	preview := p.iconBtn(p.hwnd, "Preview", "markdown", x, 4)
-	p.clicks[preview] = p.openPreview
+	p.btnPreview = p.iconBtn(p.hwnd, "Preview", "markdown", x, 4)
+	p.clicks[p.btnPreview] = p.openPreview
+	p.layoutBar()
 	p.tree = uintptr(create(p.hwnd, "SysTreeView32", "", wsChild|wsVis|tvsHasButtons|tvsShowSelAlways|tvsFullRowSelect, 8, barH, sideW, 640, 0))
 	explorerTheme(p.tree)
 	p.treeIcons()
-	p.tabs = uintptr(create(p.hwnd, "SysTabControl32", "", wsChild|wsVis|wsClip|tcsOwnerDraw|tcsRagged, 276, barH, 800, tabH, 0))
+	p.tabs = uintptr(create(p.hwnd, "SysTabControl32", "", wsChild|wsVis|wsClip|tcsOwnerDraw|tcsRagged, paneX, barH, 800, tabH, 0))
 	clearTheme(p.tabs)
 	send(p.tabs, tcmSetPadding, 0, uintptr(14|(4<<16)))
 	hookTabs(p)
-	p.host = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsClip, 276, barH+tabH, 800, 612, 0))
+	p.host = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsClip, paneX, barH+tabH, 800, 612, 0))
 	p.fillTree()
 	p.chrome = edge.NewChromium()
 	if local := os.Getenv("LOCALAPPDATA"); local != "" {
@@ -1492,18 +1497,29 @@ func (p *panel) onSize() {
 			p.layoutBulk()
 		}
 	case "editor":
+		p.layoutBar()
 		if p.tree != 0 {
 			move(p.tree, 8, barH, sideW, h-barH-8)
 		}
 		if p.tabs != 0 {
-			move(p.tabs, 276, barH, w-284, tabH)
+			move(p.tabs, paneX, barH, w-paneX-8, tabH)
 		}
 		if p.host != 0 {
-			move(p.host, 276, barH+tabH, w-284, h-barH-tabH-8)
+			move(p.host, paneX, barH+tabH, w-paneX-8, h-barH-tabH-8)
 			if p.chrome != nil {
 				p.chrome.Resize()
 			}
 		}
+	}
+}
+
+func (p *panel) layoutBar() {
+	w, _ := clientSize(p.hwnd)
+	if p.btnDel != 0 {
+		move(p.btnDel, 8+sideW-iconBtnS, 4, iconBtnS, iconBtnS)
+	}
+	if p.btnPreview != 0 {
+		move(p.btnPreview, w-8-iconBtnS, 4, iconBtnS, iconBtnS)
 	}
 }
 
