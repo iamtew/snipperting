@@ -53,6 +53,9 @@ func TestMonacoFiles(t *testing.T) {
 	if rr.Body.String() != "EDITOR" {
 		t.Fatalf("editor %q", rr.Body.String())
 	}
+	if rr.Header().Get("Cache-Control") != "no-store" {
+		t.Fatal("editor must not be cached")
+	}
 	rr = httptest.NewRecorder()
 	s.ServeHTTP(rr, httptest.NewRequest("GET", "/web/vendor/monaco/loader.js", nil))
 	if rr.Body.String() != "LOADER" {

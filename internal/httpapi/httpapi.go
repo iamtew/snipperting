@@ -63,6 +63,7 @@ func (s *Server) editor(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	w.Header().Set("Cache-Control", "no-store")
 	http.ServeFile(w, r, filepath.Join(s.WebRoot, "editor.html"))
 }
 

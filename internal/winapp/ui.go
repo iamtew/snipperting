@@ -755,7 +755,7 @@ func openEditor(file string) {
 		return
 	}
 	p.chrome.Resize()
-	p.chrome.Navigate(fmt.Sprintf("http://127.0.0.1:%d/editor", uiPort))
+	p.chrome.Navigate(fmt.Sprintf("http://127.0.0.1:%d/editor?v=%s", uiPort, uiVer))
 	if file != "" {
 		p.loadFile(file)
 	}
@@ -843,7 +843,7 @@ func (p *panel) snipFmt(kind string) {
 		return
 	}
 	k, _ := json.Marshal(kind)
-	p.chrome.Eval("window.snipFmt&&window.snipFmt(" + string(k) + ")")
+	p.chrome.Eval("window.snipFmt&&window.snipFmt(" + string(k) + ")&&true")
 }
 
 func hookTabs(p *panel) {

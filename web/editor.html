@@ -89,15 +89,16 @@ require(["vs/editor/editor.main"], function () {
 
   window.snipFmt = function (kind) {
     const model = editor.getModel();
-    if (!model) return;
+    if (!model) return true;
     const sel = editor.getSelection();
-    const t = model.getValueInRange(sel);
+    const range = new monaco.Range(sel.startLineNumber, sel.startColumn, sel.endLineNumber, sel.endColumn);
+    const t = model.getValueInRange(range);
     function wrap(left, right) {
-      editor.executeEdits("snip", [{ range: sel, text: left + t + right }]);
+      editor.executeEdits("snip", [{ range: range, text: left + t + right }]);
     }
     function prefix(p) {
       const edits = [];
-      for (let line = sel.startLineNumber; line <= sel.endLineNumber; line++) {
+      for (let line = range.startLineNumber; line <= range.endLineNumber; line++) {
         edits.push({ range: new monaco.Range(line, 1, line, 1), text: p });
       }
       editor.executeEdits("snip", edits);
@@ -112,6 +113,7 @@ require(["vs/editor/editor.main"], function () {
     else if (kind === "list") prefix("- ");
     else if (kind === "olist") prefix("1. ");
     editor.focus();
+    return true;
   };
 
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function () {
