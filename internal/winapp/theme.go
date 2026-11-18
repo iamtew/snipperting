@@ -22,9 +22,17 @@ const (
 	tvsFullRowSelect     = 0x1000
 	bsOwner              = 0x000B
 	tcsOwnerDraw         = 0x2000
+	tcsRagged            = 0x0800
 	tvmSetBk             = 0x111D
 	tvmSetText           = 0x111E
+	tvmSetImageList      = 0x1109
+	tvmSetIndent         = 0x1107
+	tvifImage            = 0x0002
+	tvifSelImage         = 0x0020
 	tcmGetItem           = 0x133C
+	tcmGetItemRect       = 0x130A
+	tcmHitTest           = 0x130D
+	tcmSetPadding        = 0x132B
 	wmCtlColorEdit       = 0x0133
 	wmCtlColorBtn        = 0x0135
 	wmCtlColorStatic     = 0x0138
@@ -35,6 +43,7 @@ const (
 	odtButton            = 4
 	odtTab               = 101
 	dtCenter             = 0x0025      // DT_CENTER|DT_VCENTER|DT_SINGLELINE
+	dtLeft               = 0x0024      // DT_LEFT|DT_VCENTER|DT_SINGLELINE
 	gclpBg               = ^uintptr(9) // GCLP_HBRBACKGROUND = -10
 	dwmDarkMode          = 20
 	dwmDarkModeOld       = 19
@@ -55,6 +64,11 @@ var (
 	pSetDPI       = u32.NewProc("SetProcessDpiAwarenessContext")
 	pFillRect     = u32.NewProc("FillRect")
 	pDrawText     = u32.NewProc("DrawTextW")
+	pCreateDIB    = g32.NewProc("CreateDIBSection")
+	pCreateDC     = g32.NewProc("CreateCompatibleDC")
+	pDeleteDC     = g32.NewProc("DeleteDC")
+	pExcludeClip  = g32.NewProc("ExcludeClipRect")
+	pAlpha        = windows.NewLazySystemDLL("msimg32.dll").NewProc("AlphaBlend")
 	pInvalidate   = u32.NewProc("InvalidateRect")
 	pClassLong    = u32.NewProc("SetClassLongPtrW")
 	pClassName    = u32.NewProc("GetClassNameW")
@@ -279,6 +293,14 @@ func setThemeName(hwnd uintptr, name string) {
 	pSetTheme.Call(hwnd, uintptr(unsafe.Pointer(n)), 0)
 }
 
+func clearTheme(hwnd uintptr) {
+	if hwnd == 0 {
+		return
+	}
+	empty, _ := windows.UTF16PtrFromString("")
+	pSetTheme.Call(hwnd, uintptr(unsafe.Pointer(empty)), uintptr(unsafe.Pointer(empty)))
+}
+
 func themeExplorer(hwnd uintptr) {
 	name := "Explorer"
 	if uiPal.dark {
@@ -339,14 +361,27 @@ func paintOwned(parent, lp uintptr) {
 		return
 	}
 	on := false
-	if p := panels[parent]; p != nil && p.on != nil {
-		on = p.on[di.hwndItem]
+	glyph := ""
+	if p := panels[parent]; p != nil {
+		if p.on != nil {
+			on = p.on[di.hwndItem]
+		}
+		if p.glyph != nil {
+			glyph = p.glyph[di.hwndItem]
+		}
 	}
 	brush, fg := uiPal.fieldBrush, uiPal.text
+	if glyph != "" {
+		brush = uiPal.bgBrush
+	}
 	if on {
 		brush, fg = uiPal.accBrush, uiPal.accentText
 	}
 	pFillRect.Call(di.hdc, uintptr(unsafe.Pointer(&di.rc)), brush)
+	if glyph != "" {
+		drawGlyph(di.hdc, glyph, di.rc)
+		return
+	}
 	if guiFont != 0 {
 		pSelect.Call(di.hdc, guiFont)
 	}
@@ -374,8 +409,15 @@ func paintTab(di *drawItem) {
 	pSetBkMode.Call(di.hdc, 1)
 	pSetTextColor.Call(di.hdc, uintptr(uiPal.text))
 	title := tabLabel(di.hwndItem, di.itemID)
+	text := di.rc
+	text.left += 8
+	text.right -= 18
 	u, _ := windows.UTF16PtrFromString(title)
-	pDrawText.Call(di.hdc, uintptr(unsafe.Pointer(u)), ^uintptr(0), uintptr(unsafe.Pointer(&di.rc)), dtCenter)
+	pDrawText.Call(di.hdc, uintptr(unsafe.Pointer(u)), ^uintptr(0), uintptr(unsafe.Pointer(&text)), dtLeft)
+	xrc := di.rc
+	xrc.left = xrc.right - 18
+	xu, _ := windows.UTF16PtrFromString("×")
+	pDrawText.Call(di.hdc, uintptr(unsafe.Pointer(xu)), ^uintptr(0), uintptr(unsafe.Pointer(&xrc)), dtCenter)
 }
 
 func tabLabel(tabs uintptr, i uint32) string {
@@ -402,6 +444,7 @@ func reloadTheme() {
 		}
 		applyFrame(p.hwnd)
 		explorerTheme(p.tree)
+		p.treeIcons()
 		if p.dataEdit != 0 {
 			colorEdit(p.dataEdit)
 		}

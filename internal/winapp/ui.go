@@ -27,6 +27,7 @@ const (
 	wmNotify     = 0x004E
 	wmVScroll    = 0x0115
 	wmMouseWheel = 0x020A
+	wmLButton    = 0x0201
 	wmSetFont    = 0x0030
 	wmGetText    = 0x000D
 	wmGetTextLen = 0x000E
@@ -56,15 +57,22 @@ const (
 	tviRoot       = ^uintptr(0xFFFF) // (HTREEITEM)-0x10000
 	tvmInsert     = 0x1132
 	tvmDelete     = 0x1101
-	tvifTextParam = 0x0005
+	tvifIcon      = 0x0027       // TEXT|IMAGE|SELECTEDIMAGE|PARAM
 	tvnSelChanged = ^uint32(450) // TVN_SELCHANGEDW = -451
+	ilcColor32    = 0x20
+	sideW         = int32(260)
+	barH          = int32(32)
+	tabH          = int32(28)
+	iconBtnS      = int32(26)
 
 	tcmInsert    = 0x133E
 	tcmSetCur    = 0x130C
 	tcmGetCur    = 0x130B
 	tcmDelete    = 0x1308
 	tcmSetItem   = 0x133D
+	tcmGetCount  = 0x1304
 	tcifText     = 0x0001
+	wmPaint      = 0x000F
 	tcnSelChange = ^uint32(550) // TCN_SELCHANGE = -551
 
 	mbYesNoCancel = 0x00000033
@@ -146,6 +154,21 @@ type tcitem struct {
 	lParam      uintptr
 }
 
+type tchit struct {
+	x, y  int32
+	flags uint32
+}
+
+type tabHook struct {
+	old uintptr
+	p   *panel
+}
+
+var (
+	tabCB    uintptr
+	tabHooks = map[uintptr]tabHook{}
+)
+
 type panel struct {
 	kind       string
 	hwnd       uintptr
@@ -167,6 +190,8 @@ type panel struct {
 	open       []string
 	dirty      map[string]bool
 	on         map[uintptr]bool
+	glyph      map[uintptr]string
+	himl       uintptr
 	selDir     string
 	curPath    string
 	pending    string
@@ -377,6 +402,13 @@ func (p *panel) onMsg(hwnd, msg, wp, lp uintptr) bool {
 			delete(panels, hwnd)
 			if p.bulk != 0 {
 				delete(panels, p.bulk)
+			}
+			if p.tabs != 0 {
+				delete(tabHooks, p.tabs)
+			}
+			if p.himl != 0 {
+				pImgDestroy.Call(p.himl)
+				p.himl = 0
 			}
 			p.hwnd = 0
 			if p.kind == "prompt" {
@@ -619,21 +651,40 @@ func openAbout() {
 }
 
 func openEditor(file string) {
-	p := &panel{kind: "editor", clicks: map[uintptr]func(){}, dataDir: uiCfg.Get().DataDir, dirty: map[string]bool{}, on: map[uintptr]bool{}}
+	p := &panel{kind: "editor", clicks: map[uintptr]func(){}, dataDir: uiCfg.Get().DataDir, dirty: map[string]bool{}, on: map[uintptr]bool{}, glyph: map[uintptr]string{}}
 	p.hwnd = uintptr(frame("Editor", 1100, 720))
 	panels[p.hwnd] = p
-	note := p.button(p.hwnd, "New note", 8, 6, 88, 26)
-	folder := p.button(p.hwnd, "New folder", 100, 6, 88, 26)
-	save := p.button(p.hwnd, "Save", 192, 6, 72, 26)
-	closeTab := p.button(p.hwnd, "Close tab", 268, 6, 88, 26)
+	note := p.iconBtn(p.hwnd, "New note", "file-plus", 8, 4)
+	folder := p.iconBtn(p.hwnd, "New folder", "folder-plus", 36, 4)
+	save := p.iconBtn(p.hwnd, "Save", "device-floppy", 64, 4)
 	p.clicks[note] = p.newNote
 	p.clicks[folder] = p.newFolder
 	p.clicks[save] = p.saveActive
-	p.clicks[closeTab] = p.closeActive
-	p.tree = uintptr(create(p.hwnd, "SysTreeView32", "", wsChild|wsVis|tvsHasButtons|tvsShowSelAlways|tvsFullRowSelect, 8, 40, 260, 640, 0))
+	x := int32(276)
+	for _, f := range []struct{ title, icon, kind string }{
+		{"Bold", "bold", "bold"},
+		{"Italic", "italic", "italic"},
+		{"Strikethrough", "strikethrough", "strike"},
+		{"Heading", "heading", "heading"},
+		{"Quote", "quote", "quote"},
+		{"List", "list", "list"},
+		{"Numbered list", "list-numbers", "olist"},
+		{"Code", "code", "code"},
+		{"Link", "link", "link"},
+	} {
+		b := p.iconBtn(p.hwnd, f.title, f.icon, x, 4)
+		kind := f.kind
+		p.clicks[b] = func() { p.snipFmt(kind) }
+		x += 28
+	}
+	p.tree = uintptr(create(p.hwnd, "SysTreeView32", "", wsChild|wsVis|tvsHasButtons|tvsShowSelAlways|tvsFullRowSelect, 8, barH, sideW, 640, 0))
 	explorerTheme(p.tree)
-	p.tabs = uintptr(create(p.hwnd, "SysTabControl32", "", wsChild|wsVis|wsClip|tcsOwnerDraw, 276, 40, 800, 28, 0))
-	p.host = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsClip, 276, 68, 800, 612, 0))
+	p.treeIcons()
+	p.tabs = uintptr(create(p.hwnd, "SysTabControl32", "", wsChild|wsVis|wsClip|tcsOwnerDraw|tcsRagged, 276, barH, 800, tabH, 0))
+	clearTheme(p.tabs)
+	send(p.tabs, tcmSetPadding, 0, uintptr(14|(4<<16)))
+	hookTabs(p)
+	p.host = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsClip, 276, barH+tabH, 800, 612, 0))
 	p.fillTree()
 	p.chrome = edge.NewChromium()
 	if local := os.Getenv("LOCALAPPDATA"); local != "" {
@@ -728,25 +779,132 @@ func (p *panel) addTree(parent uintptr, nodes []snippet.Node) {
 			label = n.Name
 		}
 		p.nodes = append(p.nodes, tnode{path: n.Path, file: n.Type == "file"})
-		h := p.insertTree(parent, label, uintptr(len(p.nodes)-1))
+		img := int32(0)
+		if n.Type == "file" {
+			img = 1
+		}
+		h := p.insertTree(parent, label, uintptr(len(p.nodes)-1), img)
 		if n.Type == "dir" {
 			p.addTree(h, n.Children)
 		}
 	}
 }
 
-func (p *panel) insertTree(parent uintptr, label string, idx uintptr) uintptr {
+func (p *panel) insertTree(parent uintptr, label string, idx uintptr, img int32) uintptr {
 	u, _ := windows.UTF16FromString(label)
 	ins := tvinsert{
 		hParent:      parent,
 		hInsertAfter: tviLast,
 		item: tvitem{
-			mask:    tvifTextParam,
-			pszText: uintptr(unsafe.Pointer(&u[0])),
-			lParam:  idx,
+			mask:           tvifIcon,
+			pszText:        uintptr(unsafe.Pointer(&u[0])),
+			iImage:         img,
+			iSelectedImage: img,
+			lParam:         idx,
 		},
 	}
 	return send(p.tree, tvmInsert, 0, uintptr(unsafe.Pointer(&ins)))
+}
+
+func (p *panel) treeIcons() {
+	if p.tree == 0 {
+		return
+	}
+	if p.himl != 0 {
+		pImgDestroy.Call(p.himl)
+		p.himl = 0
+	}
+	h, _, _ := pImgCreate.Call(16, 16, ilcColor32, 2, 1)
+	if h == 0 {
+		return
+	}
+	p.himl = h
+	pImgAdd.Call(h, glyphBmp("folder"), 0)
+	pImgAdd.Call(h, glyphBmp("file"), 0)
+	send(p.tree, tvmSetImageList, 0, h)
+	send(p.tree, tvmSetIndent, 19, 0)
+}
+
+func (p *panel) iconBtn(parent uintptr, title, name string, x, y int32) uintptr {
+	h := p.button(parent, title, x, y, iconBtnS, iconBtnS)
+	p.glyph[h] = name
+	return h
+}
+
+func (p *panel) snipFmt(kind string) {
+	if p.chrome == nil || !p.ready {
+		return
+	}
+	k, _ := json.Marshal(kind)
+	p.chrome.Eval("window.snipFmt&&window.snipFmt(" + string(k) + ")")
+}
+
+func hookTabs(p *panel) {
+	if p.tabs == 0 {
+		return
+	}
+	if tabCB == 0 {
+		tabCB = windows.NewCallback(tabWndProc)
+	}
+	old, _, _ := pSetLong.Call(p.tabs, ^uintptr(3), tabCB) // GWLP_WNDPROC = -4
+	tabHooks[p.tabs] = tabHook{old: old, p: p}
+}
+
+func tabWndProc(hwnd, msg, wp, lp uintptr) uintptr {
+	h := tabHooks[hwnd]
+	if msg == wmErase {
+		return eraseBg(hwnd, wp)
+	}
+	if msg == wmLButton && h.p != nil && h.p.tabCloseHit(lp) {
+		return 0
+	}
+	var r uintptr
+	if h.old != 0 {
+		r, _, _ = pCallOld.Call(h.old, hwnd, msg, wp, lp)
+	} else {
+		r = defWnd(hwnd, msg, wp, lp)
+	}
+	if msg == wmPaint {
+		fillTabRest(hwnd)
+	}
+	return r
+}
+
+func fillTabRest(hwnd uintptr) {
+	if uiPal.bgBrush == 0 {
+		return
+	}
+	hdc, _, _ := pGetDC.Call(hwnd)
+	if hdc == 0 {
+		return
+	}
+	n := int(send(hwnd, tcmGetCount, 0, 0))
+	for i := 0; i < n; i++ {
+		var ir wrect
+		send(hwnd, tcmGetItemRect, uintptr(i), uintptr(unsafe.Pointer(&ir)))
+		pExcludeClip.Call(hdc, uintptr(ir.left), uintptr(ir.top), uintptr(ir.right), uintptr(ir.bottom))
+	}
+	var cr wrect
+	pClient.Call(hwnd, uintptr(unsafe.Pointer(&cr)))
+	pFillRect.Call(hdc, uintptr(unsafe.Pointer(&cr)), uiPal.bgBrush)
+	pReleaseDC.Call(hwnd, hdc)
+}
+
+func (p *panel) tabCloseHit(lp uintptr) bool {
+	hit := tchit{x: int32(int16(lp)), y: int32(int16(lp >> 16))}
+	i := int(send(p.tabs, tcmHitTest, 0, uintptr(unsafe.Pointer(&hit))))
+	if i < 0 || i >= len(p.open) {
+		return false
+	}
+	var rc wrect
+	if send(p.tabs, tcmGetItemRect, uintptr(i), uintptr(unsafe.Pointer(&rc))) == 0 {
+		return false
+	}
+	if hit.x < rc.right-18 {
+		return false
+	}
+	p.closePath(p.open[i])
+	return true
 }
 
 func (p *panel) onNotify(lp uintptr) {
@@ -797,13 +955,6 @@ func (p *panel) saveActive() {
 	if p.chrome != nil && p.curPath != "" {
 		p.chrome.Eval(`window.snipGet&&window.snipGet()`)
 	}
-}
-
-func (p *panel) closeActive() {
-	if p.curPath == "" {
-		return
-	}
-	p.closePath(p.curPath)
 }
 
 func (p *panel) hasDirty() bool {
@@ -1068,13 +1219,13 @@ func (p *panel) onSize() {
 		}
 	case "editor":
 		if p.tree != 0 {
-			move(p.tree, 8, 40, 260, h-48)
+			move(p.tree, 8, barH, sideW, h-barH-8)
 		}
 		if p.tabs != 0 {
-			move(p.tabs, 276, 40, w-284, 28)
+			move(p.tabs, 276, barH, w-284, tabH)
 		}
 		if p.host != 0 {
-			move(p.host, 276, 68, w-284, h-76)
+			move(p.host, 276, barH+tabH, w-284, h-barH-tabH-8)
 			if p.chrome != nil {
 				p.chrome.Resize()
 			}

@@ -87,6 +87,33 @@ require(["vs/editor/editor.main"], function () {
     window.chrome.webview.postMessage(JSON.stringify({ t: "saveall", files: files }));
   };
 
+  window.snipFmt = function (kind) {
+    const model = editor.getModel();
+    if (!model) return;
+    const sel = editor.getSelection();
+    const t = model.getValueInRange(sel);
+    function wrap(left, right) {
+      editor.executeEdits("snip", [{ range: sel, text: left + t + right }]);
+    }
+    function prefix(p) {
+      const edits = [];
+      for (let line = sel.startLineNumber; line <= sel.endLineNumber; line++) {
+        edits.push({ range: new monaco.Range(line, 1, line, 1), text: p });
+      }
+      editor.executeEdits("snip", edits);
+    }
+    if (kind === "bold") wrap("**", "**");
+    else if (kind === "italic") wrap("*", "*");
+    else if (kind === "strike") wrap("~~", "~~");
+    else if (kind === "code") wrap(t.indexOf("\n") >= 0 ? "```\n" : "`", t.indexOf("\n") >= 0 ? "\n```" : "`");
+    else if (kind === "link") wrap("[", "](url)");
+    else if (kind === "heading") prefix("# ");
+    else if (kind === "quote") prefix("> ");
+    else if (kind === "list") prefix("- ");
+    else if (kind === "olist") prefix("1. ");
+    editor.focus();
+  };
+
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function () {
     window.snipGet();
   });

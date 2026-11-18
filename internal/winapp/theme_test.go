@@ -1,6 +1,8 @@
 package winapp
 
 import (
+	"bytes"
+	"image/png"
 	"path/filepath"
 	"testing"
 	"unsafe"
@@ -24,6 +26,18 @@ func TestThemeLayout(t *testing.T) {
 	}
 	if messageFont() == 0 {
 		t.Fatal("messageFont")
+	}
+}
+
+func TestChromeIconsDecode(t *testing.T) {
+	for _, name := range []string{"folder", "file", "file-plus", "folder-plus", "device-floppy", "bold", "italic", "strikethrough", "heading", "quote", "list", "list-numbers", "code", "link"} {
+		raw := chromeIcon(name)
+		if len(raw) <= 22 {
+			t.Fatalf("%s empty", name)
+		}
+		if _, err := png.Decode(bytes.NewReader(raw[22:])); err != nil {
+			t.Fatalf("%s png: %v", name, err)
+		}
 	}
 }
 
