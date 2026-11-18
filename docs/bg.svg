@@ -1,7 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160">
-  <!-- Seamless snip zigzags; not a copy of assets/logo.svg -->
-  <g fill="none" stroke-width="5" stroke-linecap="butt" stroke-linejoin="round">
-    <path stroke="#219EBC" stroke-opacity=".12" d="M0 36l35 28 35-28 35 28 35-28 35 28 35-28 35 28 35-28"/>
-    <path stroke="#FFB703" stroke-opacity=".08" d="M0 116l35-28 35 28 35-28 35 28 35-28 35 28 35-28 35 28"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 92" width="160" height="92">
+  <!-- Diamond snip lattice; not a copy of assets/logo.svg -->
+  <style>
+    .cell { fill: #219EBC; fill-opacity: .18; }
+    .core { fill: #FB8500; fill-opacity: .08; }
+    .rise { fill: none; stroke: #023047; stroke-opacity: .14; stroke-width: 2; }
+    .fall { fill: none; stroke: #FFB703; stroke-opacity: .28; stroke-width: 2; }
+    @media (prefers-color-scheme: dark) {
+      .cell { fill: #8ECAE6; fill-opacity: .1; }
+      .core { fill: #FFB703; fill-opacity: .09; }
+      .rise { stroke: #8ECAE6; stroke-opacity: .32; }
+      .fall { stroke: #FB8500; stroke-opacity: .28; }
+    }
+  </style>
+  <polygon class="cell" points="80,0 160,46 80,92 0,46"/>
+  <polygon class="core" points="80,18 128,46 80,74 32,46"/>
+  <path class="rise" d="M0 46L80 0L160 46"/>
+  <path class="fall" d="M0 46L80 92L160 46"/>
 </svg>

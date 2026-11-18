@@ -5,12 +5,16 @@
   --muted: #219EBC;
   --accent: #FB8500;
   --rule: #219EBC;
+  --wash-a: radial-gradient(ellipse 80% 55% at 8% -5%, rgb(33 158 188 / 0.55), transparent 62%);
+  --wash-b: radial-gradient(ellipse 70% 50% at 100% 110%, rgb(2 48 71 / 0.28), transparent 58%);
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #023047;
     --fg: #8ECAE6;
     --accent: #FFB703;
+    --wash-a: radial-gradient(ellipse 80% 55% at 6% -8%, rgb(33 158 188 / 0.5), transparent 58%);
+    --wash-b: radial-gradient(ellipse 65% 48% at 108% 92%, rgb(142 202 230 / 0.22), transparent 52%);
   }
 }
 
@@ -18,11 +22,17 @@ html {
   min-height: 100%;
   background-color: var(--bg);
   background-image:
-    radial-gradient(ellipse 90% 55% at 50% -8%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 60%),
-    linear-gradient(180deg, transparent 35%, color-mix(in srgb, #023047 12%, transparent)),
+    var(--wash-a),
+    var(--wash-b),
+    url("bg.svg"),
     url("bg.svg");
-  background-repeat: no-repeat, no-repeat, repeat;
-  background-size: auto, auto, 420px 240px;
+  background-repeat: no-repeat, no-repeat, repeat, repeat;
+  background-size: auto, auto, 320px 184px, 160px 92px;
+  background-position: 0 0, 0 0, 0 0, 80px 46px;
+  background-blend-mode: normal, normal, multiply, multiply;
+}
+@media (prefers-color-scheme: dark) {
+  html { background-blend-mode: normal, normal, soft-light, overlay; }
 }
 
 body {
@@ -36,11 +46,12 @@ body {
   max-width: 42rem;
   margin: 0 auto;
   padding: 1.5rem 1.5rem 2rem;
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border: 2px solid var(--rule);
   border-radius: 12px;
+  box-shadow: 0 18px 50px rgb(2 48 71 / 0.18);
 }
 
 a { color: var(--accent); }

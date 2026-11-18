@@ -111,6 +111,6 @@ The `./docs` folder shall contain a website for GitHub pages.
 Think product page, explaining the application.
 The product page links to a rendered manual (`manual.html`). That page loads `MANUAL.md` in the browser and renders it (title and intro, then table of contents, heading anchors). `MANUAL.md` is the source.
 The product page and the manual header link to GitHub: source repo, latest release, and the issue tracker. Those links use vendored Tabler icons (`docs/vendor/tabler/`). Both pages set `docs/logo.svg` as the favicon.
-Pages share `docs/pages.css`. The page fill is a repeating snip-lattice (`docs/bg.svg`, logo zigzags as texture, not a copy of `assets/logo.svg`) plus a brand accent gradient; copy sits on a frosted sheet. In-app Help stays a flat pane (no lattice).
+Pages share `docs/pages.css`. The page fill is a repeating diamond snip-lattice (`docs/bg.svg`, logo zigzags as texture, not a copy of `assets/logo.svg`) plus teal/navy depth washes (no orange overlay); copy sits on a frosted sheet. In-app Help stays a flat pane (no lattice).
 The manual shall also be shipped inside snipperting executable and be possible to viewed by user under Help menu item. Help renders MANUAL.md (not source) with the document title and intro first, then a table of contents whose links jump to heading anchors.
 
