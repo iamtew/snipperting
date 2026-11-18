@@ -1,8 +1,8 @@
 # snipperting - Snippets tool for Windows
 Save text snippets and easily access them from SysTray icon.
 Windows application, accessed via menu from SysTray.
-App listens on 127.0.0.1 port 45690..45699 only so the Monaco editor can load its scripts, and so `GET /api/health` can confirm the process is up.
-Snippet files, the tray menu, preferences, help, and about are native. They do not go through HTTP.
+Edit's WebView2 maps the on-disk `web/` folder to `https://snipperting.example/` so Monaco can load its scripts. No HTTP server. One process at a time (named mutex).
+Snippet files, the tray menu, preferences, help, and about are native.
 Written in Go, using Justfile for command runner, ships with installer for ease of use.
 Installs somewhere local for user, for example some %LOCALDATA% sub-folder.
 Application keeps basic config in JSON file, next to installed executable. 
