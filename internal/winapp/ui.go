@@ -109,6 +109,7 @@ var (
 	uiCfg     *config.Store
 	uiManual  string
 	uiVer     string
+	uiRev     string
 	panels    = map[uintptr]*panel{}
 	classU    []uint16
 	wndCB     uintptr
@@ -243,11 +244,12 @@ type panel struct {
 	btnPreview uintptr
 }
 
-func StartUI(cfg *config.Store, manual, version string) {
+func StartUI(cfg *config.Store, manual, version, rev string) {
 	uiOnce.Do(func() {
 		uiCfg = cfg
 		uiManual = manual
 		uiVer = version
+		uiRev = rev
 		ready := make(chan struct{})
 		go func() {
 			runtime.LockOSThread()
@@ -721,6 +723,9 @@ func openAbout() {
 	}
 	p.static(p.hwnd, "snipperting", 104, 28, 280, 24)
 	p.static(p.hwnd, "v"+uiVer, 104, 52, 280, 20)
+	if uiRev != "" {
+		p.static(p.hwnd, uiRev, 104, 74, 280, 20)
+	}
 	p.static(p.hwnd, "Snippets from the Windows tray.", 24, 110, 360, 40)
 }
 

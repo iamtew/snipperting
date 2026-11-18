@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 
 	"snipperting/docs"
 	"snipperting/internal/config"
 	"snipperting/internal/winapp"
 )
 
-var version = config.Version
+var version = "dev"
 
 func main() {
 	if !winapp.SingleInstance("Local\\snipperting") {
@@ -20,8 +21,34 @@ func main() {
 	if err != nil {
 		fatal(err)
 	}
-	winapp.StartUI(cfg, docs.Manual, version)
+	winapp.StartUI(cfg, docs.Manual, version, vcsRev())
 	winapp.RunTray(loadIcon(), cfg)
+}
+
+func vcsRev() string {
+	bi, ok := debug.ReadBuildInfo()
+	if !ok {
+		return ""
+	}
+	rev, dirty := "", false
+	for _, s := range bi.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			rev = s.Value
+		case "vcs.modified":
+			dirty = s.Value == "true"
+		}
+	}
+	if rev == "" {
+		return ""
+	}
+	if len(rev) > 7 {
+		rev = rev[:7]
+	}
+	if dirty {
+		return rev + "-dirty"
+	}
+	return rev
 }
 
 func loadIcon() []byte {

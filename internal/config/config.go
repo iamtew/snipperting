@@ -7,8 +7,6 @@ import (
 	"sync"
 )
 
-const Version = "0.0.1"
-
 type File struct {
 	DataDir    string `json:"dataDir"`
 	Theme      string `json:"theme"`

@@ -1,6 +1,7 @@
 set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
-version := "0.0.1"
+# git tag at HEAD, or "dev" when untagged
+version := `git describe --tags --exact-match 2>$null; if (-not $?) { "dev" }; exit 0`
 goflags := "-ldflags \"-X main.version=" + version + "\""
 
 # list recipes
@@ -58,4 +59,4 @@ install: build icon
 dist: build icon docs-logo
     if (!(Test-Path dist)) { New-Item -ItemType Directory dist | Out-Null }
     Compress-Archive -Force -Path dist/snipperting.exe,build/snipperting.ico,web,docs/MANUAL.md -DestinationPath dist/snipperting-{{version}}.zip
-    if (Get-Command ISCC -ErrorAction SilentlyContinue) { ISCC installer/snipperting.iss }
+    if (Get-Command ISCC -ErrorAction SilentlyContinue) { ISCC /DMyAppVersion={{version}} installer/snipperting.iss }

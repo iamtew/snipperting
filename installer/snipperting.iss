@@ -1,5 +1,7 @@
 #define MyAppName "snipperting"
-#define MyAppVersion "0.0.1"
+#ifndef MyAppVersion
+#define MyAppVersion "dev"
+#endif
 
 [Setup]
 AppId={{A7C4E2B1-9F10-4D33-8C8A-7B91E2C4F018}}
