@@ -90,7 +90,8 @@ const (
 	idYes         = 6
 	idNo          = 7
 
-	rowH = 28
+	rowH          = 28
+	emSetReadOnly = 0x00CF
 )
 
 var (
@@ -198,6 +199,7 @@ type panel struct {
 	hwnd       uintptr
 	clicks     map[uintptr]func()
 	dataEdit   uintptr
+	browse     uintptr
 	clipCheck  uintptr
 	themeSys   uintptr
 	themeLight uintptr
@@ -452,10 +454,12 @@ func openPrefs() {
 	panels[p.hwnd] = p
 	p.static(p.hwnd, "Data directory", 12, 12, 200, 18)
 	p.dataEdit = p.edit(p.hwnd, "", 12, 32, 580, 24, false)
-	save := p.button(p.hwnd, "Save", 600, 30, 80, 26)
-	p.clicks[save] = p.savePrefs
+	send(p.dataEdit, emSetReadOnly, 1, 0)
+	p.browse = p.button(p.hwnd, "Browse", 600, 30, 80, 26)
+	p.clicks[p.browse] = p.pickDataDir
 	p.clipCheck = uintptr(create(p.hwnd, "BUTTON", "Show copied notice", wsChild|wsVis|wsTab|bsAutoCheck, 12, 64, 220, 24, 0))
 	themeExplorer(p.clipCheck)
+	p.clicks[p.clipCheck] = p.saveClipNotice
 	p.static(p.hwnd, "Theme", 12, 94, 80, 18)
 	p.themeSys = p.pushLike(p.hwnd, "System", false)
 	p.themeLight = p.pushLike(p.hwnd, "Light", false)
@@ -472,16 +476,28 @@ func openPrefs() {
 	p.rebuildPrefs()
 }
 
-func (p *panel) savePrefs() {
+func (p *panel) clipNotice() bool {
+	return send(p.clipCheck, bmGetCheck, 0, 0) != 0
+}
+
+func (p *panel) pickDataDir() {
+	dir, ok := pickFolder(p.hwnd, textOf(p.dataEdit))
+	if !ok {
+		return
+	}
 	cur := uiCfg.Get()
-	notice := send(p.clipCheck, bmGetCheck, 0, 0) != 0
-	_ = uiCfg.Set(config.File{DataDir: textOf(p.dataEdit), Theme: cur.Theme, ClipNotice: notice})
+	_ = uiCfg.Set(config.File{DataDir: dir, Theme: cur.Theme, ClipNotice: p.clipNotice()})
 	p.rebuildPrefs()
 }
 
+func (p *panel) saveClipNotice() {
+	cur := uiCfg.Get()
+	_ = uiCfg.Set(config.File{DataDir: cur.DataDir, Theme: cur.Theme, ClipNotice: p.clipNotice()})
+}
+
 func (p *panel) applyTheme(name string) {
-	notice := send(p.clipCheck, bmGetCheck, 0, 0) != 0
-	_ = uiCfg.Set(config.File{DataDir: textOf(p.dataEdit), Theme: name, ClipNotice: notice})
+	cur := uiCfg.Get()
+	_ = uiCfg.Set(config.File{DataDir: cur.DataDir, Theme: name, ClipNotice: p.clipNotice()})
 	p.markTheme(name)
 	reloadTheme()
 }
@@ -551,11 +567,7 @@ func (p *panel) addBulk(nodes []snippet.Node, depth int) {
 			}
 			continue
 		}
-		label := n.Name
-		if n.Label != "" {
-			label += " — " + n.Label
-		}
-		lab := p.static(p.bulk, label, 0, 0, 200, 24)
+		lab := p.static(p.bulk, n.Name, 0, 0, 200, 24)
 		p.placed = append(p.placed, placed{hwnd: lab, row: row, col: 0, x: x})
 		act := n.Action
 		if act != "inject" {
@@ -1314,6 +1326,9 @@ func (p *panel) onSize() {
 	case "prefs":
 		if p.dataEdit != 0 {
 			move(p.dataEdit, 12, 32, w-120, 24)
+		}
+		if p.browse != 0 {
+			move(p.browse, w-96, 30, 80, 26)
 		}
 		if p.bulk != 0 {
 			move(p.bulk, 0, 170, w, h-170)
