@@ -5,54 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>snipperting</title>
   <link rel="icon" href="logo.svg" type="image/svg+xml">
-  <style>
-    :root { font-family: "Segoe UI", system-ui, sans-serif; color: #023047; background: #8ECAE6; }
-    @media (prefers-color-scheme: dark) {
-      :root { color: #8ECAE6; background: #023047; }
-    }
-    body { max-width: 42rem; margin: 2rem auto; padding: 0 16px; line-height: 1.5; }
-    .logo { display: block; width: 96px; height: 96px; }
-    a { color: #FB8500; }
-    @media (prefers-color-scheme: dark) {
-      a { color: #FFB703; }
-    }
-    code { background: transparent; border: 2px solid #219EBC; padding: 0 4px; border-radius: 4px; }
-    .gh {
-      display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem;
-      margin: 1.25rem 0; padding: 0;
-    }
-    .gh a { display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; }
-    .gh a:hover { text-decoration: underline; }
-    .gh .i {
-      width: 1.15rem; height: 1.15rem; background: currentColor;
-      -webkit-mask: var(--icon) no-repeat center / contain;
-      mask: var(--icon) no-repeat center / contain;
-    }
-  </style>
+  <link rel="stylesheet" href="pages.css">
 </head>
 <body>
-  <p><img class="logo" src="logo.svg" width="96" height="96" alt="snipperting"></p>
-  <h1>snipperting</h1>
-  <p>Save text snippets on Windows and fire them from the system tray. Copy to the clipboard, or inject at the caret.</p>
-  <nav class="gh" aria-label="GitHub">
-    <a href="https://github.com/iamtew/snipperting" target="_blank" rel="noopener noreferrer">
-      <span class="i" style="--icon: url(vendor/tabler/brand-github.svg)"></span>
-      Source
-    </a>
-    <a href="https://github.com/iamtew/snipperting/releases/latest" target="_blank" rel="noopener noreferrer">
-      <span class="i" style="--icon: url(vendor/tabler/download.svg)"></span>
-      Latest release
-    </a>
-    <a href="https://github.com/iamtew/snipperting/issues" target="_blank" rel="noopener noreferrer">
-      <span class="i" style="--icon: url(vendor/tabler/bug.svg)"></span>
-      Issues
-    </a>
-  </nav>
-  <ul>
-    <li>Markdown files in a folder you choose (default <code>~/.snipperting</code>)</li>
-    <li>Folders become menu categories</li>
-    <li>Native tray menu, preferences, and help. Monaco edits snippets inside a native window</li>
-  </ul>
-  <p><a href="manual.html">Read the manual</a></p>
+  <main class="sheet home">
+    <p><img class="logo" src="logo.svg" width="96" height="96" alt="snipperting"></p>
+    <h1>snipperting</h1>
+    <p>Save text snippets on Windows and fire them from the system tray. Copy to the clipboard, or inject at the caret.</p>
+    <nav class="gh" aria-label="GitHub">
+      <a href="https://github.com/iamtew/snipperting" target="_blank" rel="noopener noreferrer">
+        <span class="i" style="--icon: url(vendor/tabler/brand-github.svg)"></span>
+        Source
+      </a>
+      <a href="https://github.com/iamtew/snipperting/releases/latest" target="_blank" rel="noopener noreferrer">
+        <span class="i" style="--icon: url(vendor/tabler/download.svg)"></span>
+        Latest release
+      </a>
+      <a href="https://github.com/iamtew/snipperting/issues" target="_blank" rel="noopener noreferrer">
+        <span class="i" style="--icon: url(vendor/tabler/bug.svg)"></span>
+        Issues
+      </a>
+    </nav>
+    <ul>
+      <li>Markdown files in a folder you choose (default <code>~/.snipperting</code>)</li>
+      <li>Folders become menu categories</li>
+      <li>Native tray menu, preferences, and help. Monaco edits snippets inside a native window</li>
+    </ul>
+    <p><a href="manual.html">Read the manual</a></p>
+  </main>
 </body>
 </html>
