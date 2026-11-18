@@ -33,6 +33,9 @@ const (
 	wmGetText    = 0x000D
 	wmGetTextLen = 0x000E
 	wmTimer      = 0x0113
+	wmSetIcon    = 0x0080
+	iconSmall    = 0
+	iconBig      = 1
 
 	wsOver    = 0x00CF0000
 	wsVis     = 0x10000000
@@ -97,17 +100,19 @@ const (
 )
 
 var (
-	uiOnce   sync.Once
-	uiMu     sync.Mutex
-	uiHwnd   uintptr
-	uiQueue  []openReq
-	uiCfg    *config.Store
-	uiManual string
-	uiVer    string
-	panels   = map[uintptr]*panel{}
-	classU   []uint16
-	wndCB    uintptr
-	guiFont  uintptr
+	uiOnce    sync.Once
+	uiMu      sync.Mutex
+	uiHwnd    uintptr
+	uiQueue   []openReq
+	uiCfg     *config.Store
+	uiManual  string
+	uiVer     string
+	panels    = map[uintptr]*panel{}
+	classU    []uint16
+	wndCB     uintptr
+	guiFont   uintptr
+	appIcon   uintptr
+	appIconSm uintptr
 )
 
 type openReq struct{ kind, file string }
@@ -276,10 +281,16 @@ func initControls() {
 func registerFrame() {
 	classU, _ = windows.UTF16FromString("snippertingFrame")
 	wndCB = windows.NewCallback(wndProc)
+	if ico := findIco(); ico != "" {
+		appIcon = loadIcoSize(ico, metrics(11), metrics(12))
+		appIconSm = loadIcoSize(ico, metrics(49), metrics(50))
+	}
 	wc := wclass{
 		size:      uint32(unsafe.Sizeof(wclass{})),
 		wndProc:   wndCB,
 		instance:  moduleHandle(),
+		icon:      appIcon,
+		iconSm:    appIconSm,
 		bg:        classBrush(),
 		className: &classU[0],
 	}
@@ -1506,6 +1517,12 @@ func frame(title string, w, h int32) uintptr {
 		y = (sh - h) / 2
 	}
 	hwnd := create(0, "", title, wsOver|wsVis|wsClip, x, y, w, h, 0)
+	if appIcon != 0 {
+		send(hwnd, wmSetIcon, iconBig, appIcon)
+	}
+	if appIconSm != 0 {
+		send(hwnd, wmSetIcon, iconSmall, appIconSm)
+	}
 	applyFrame(hwnd)
 	return hwnd
 }
