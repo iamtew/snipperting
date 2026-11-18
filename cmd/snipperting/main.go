@@ -21,7 +21,7 @@ func main() {
 	if err != nil {
 		fatal(err)
 	}
-	winapp.StartUI(cfg, docs.Manual, version, vcsRev())
+	winapp.StartUI(cfg, docs.Manual, docs.ShotPNGs(), version, vcsRev())
 	prefs, edit, editFile := parseOpen(os.Args[1:])
 	if prefs {
 		winapp.Open("prefs", "")

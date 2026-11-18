@@ -5,6 +5,20 @@ import (
 	"testing"
 )
 
+func TestInlineShotURIs(t *testing.T) {
+	md := "see ![Editor](shots/editor.png) and [site](https://example.com)"
+	out := InlineShotURIs(md, map[string][]byte{"shots/editor.png": []byte("PNG")})
+	if !strings.Contains(out, "data:image/png;base64,UE5H") {
+		t.Fatal(out)
+	}
+	if strings.Contains(out, "](shots/editor.png)") {
+		t.Fatal("editor path left")
+	}
+	if !strings.Contains(out, "https://example.com") {
+		t.Fatal("other link")
+	}
+}
+
 func TestRenderAndTOC(t *testing.T) {
 	md := `# Title
 

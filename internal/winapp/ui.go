@@ -145,6 +145,7 @@ var (
 	uiQueue   []openReq
 	uiCfg     *config.Store
 	uiManual  string
+	uiShots   map[string][]byte
 	uiVer     string
 	uiRev     string
 	panels    = map[uintptr]*panel{}
@@ -319,10 +320,11 @@ type panel struct {
 	btnPreview uintptr
 }
 
-func StartUI(cfg *config.Store, manual, version, rev string) {
+func StartUI(cfg *config.Store, manual string, shots map[string][]byte, version, rev string) {
 	uiOnce.Do(func() {
 		uiCfg = cfg
 		uiManual = manual
+		uiShots = shots
 		uiVer = version
 		uiRev = rev
 		ready := make(chan struct{})
@@ -823,7 +825,7 @@ func (p *panel) showHelp() {
 	if p.chrome == nil {
 		return
 	}
-	p.chrome.NavigateToString(mdhtml.Page("Help", uiManual, monacoDark()))
+	p.chrome.NavigateToString(mdhtml.Page("Help", mdhtml.InlineShotURIs(uiManual, uiShots), monacoDark()))
 }
 
 func placeWordmark(parent uintptr, x, y, size int32) {

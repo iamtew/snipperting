@@ -2,6 +2,7 @@ package mdhtml
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"html"
 	"strings"
@@ -11,6 +12,15 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 )
+
+// InlineShotURIs turns markdown image targets in files (keys like shots/editor.png)
+// into data:image/png;base64 URIs. Other links are left alone.
+func InlineShotURIs(md string, files map[string][]byte) string {
+	for path, b := range files {
+		md = strings.ReplaceAll(md, "]("+path+")", "](data:image/png;base64,"+base64.StdEncoding.EncodeToString(b)+")")
+	}
+	return md
+}
 
 var gm = goldmark.New(
 	goldmark.WithParserOptions(parser.WithAutoHeadingID()),
@@ -95,8 +105,9 @@ code{font-family:Consolas,"Cascadia Code",monospace;background:transparent;borde
 pre{background:transparent;border:2px solid %s;padding:1rem;border-radius:8px;overflow:auto}
 pre code{background:none;border:none;padding:0}
 blockquote{margin:1rem 0;padding:.2rem 1rem;border-left:4px solid %s;color:%s}
+img{max-width:100%%;height:auto;border:2px solid %s;border-radius:8px}
 </style></head><body><main><article>%s%s%s</article></main></body></html>`,
-		html.EscapeString(title), bg, fg, chip, accent, muted, accent, chip, chip, accent, muted, preamble, toc.String(), rest)
+		html.EscapeString(title), bg, fg, chip, accent, muted, accent, chip, chip, accent, muted, chip, preamble, toc.String(), rest)
 }
 
 // splitPreamble cuts rendered markdown at the first H2 so the title and intro sit above the TOC.
