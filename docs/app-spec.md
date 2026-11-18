@@ -68,7 +68,8 @@ Best,
 
 ## Screenshots and demo notes
 This is the product look. Screenshots, Pages, the manual, and Help examples show a desk at work: meetings, email, status, ops. Not lorem, jokes, “test snippet”, or toy names.
-Dummy notes for shots live on the Meat Bag machine in `~/.snipperting` (not in the repo, not shipped). Folders: `Email`, `Meetings` (nested `Q4-planning`), `Ops`, `Templates`. Root notes for the weekly bits people click often. File names are readable English (`follow-up.md`, `weekly-status.md`). Labels match what a person would click on the tray. One disabled and one hidden note is enough if Bulk Edit needs both states. Rebuild that tree when the data dir is empty and shots are due.
+Dummy notes for shots live on the Meat Bag machine in the data dir (default `~/.snipperting`, not in the repo, not shipped). Folders and file names are whatever is there that week; do not bake names into the screenshot script. Labels match what a person would click on the tray. One disabled and one hidden note is enough if Bulk Edit needs both states.
+`tools/shots.ps1` starts the built exe, opens Preferences and Editor, expands some Bulk Edit folders (discovers collapsed `▸` rows; does not match folder names), and writes PNGs to `build/shots/` (not shipped). `--prefs` opens Preferences. `--edit` opens Editor; an optional following argument is a data-dir relative note. The script’s default is the first `.md` it finds by walking the data dir. If snipperting is already in the tray, a second start still does nothing (named mutex). The script then fails with “quit snipperting first”. Data dir must already have notes.
 
 ## Editor
 Edit is modeled on VS Code: native file tree plus Monaco, with a status bar under the text. Native chrome (tabs, format bar, explorer icons) stays.
