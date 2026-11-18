@@ -747,7 +747,7 @@ func (p *panel) showHelp() {
 
 func openAbout() {
 	p := &panel{kind: "about", clicks: map[uintptr]func(){}}
-	p.hwnd = uintptr(frame("About", 420, 280))
+	p.hwnd = uintptr(frame("About", 440, 300))
 	panels[p.hwnd] = p
 	if ico := findIco(); ico != "" {
 		if h := loadIco(ico); h != 0 {
@@ -755,12 +755,17 @@ func openAbout() {
 			send(st, 0x0172, 1, h)
 		}
 	}
-	p.static(p.hwnd, "snipperting", 104, 28, 280, 24)
-	p.static(p.hwnd, "v"+uiVer, 104, 52, 280, 20)
-	if uiRev != "" {
-		p.static(p.hwnd, uiRev, 104, 74, 280, 20)
+	ver, rev := aboutLines(uiVer, uiRev)
+	p.static(p.hwnd, "snipperting", 104, 28, 300, 24)
+	p.static(p.hwnd, ver, 104, 52, 300, 20)
+	if rev != "" {
+		p.static(p.hwnd, rev, 104, 74, 300, 20)
 	}
-	p.static(p.hwnd, "Snippets from the Windows tray.", 24, 110, 360, 40)
+	p.static(p.hwnd, "Snippets from the Windows tray.", 24, 110, 392, 40)
+	site := p.button(p.hwnd, "Website", 24, 168, 100, 26)
+	gh := p.button(p.hwnd, "GitHub", 136, 168, 100, 26)
+	p.clicks[site] = func() { openURL(aboutSite) }
+	p.clicks[gh] = func() { openURL(aboutRepo) }
 }
 
 func openEditor(file string) {

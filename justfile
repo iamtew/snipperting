@@ -1,8 +1,10 @@
 set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
-# git tag at HEAD, or "dev" when untagged
+# git tag at HEAD, or "dev" when untagged (zip / Inno)
 version := `git describe --tags --exact-match 2>$null; if (-not $?) { "dev" }; exit 0`
-goflags := "-ldflags \"-H windowsgui -X main.version=" + version + "\""
+# nearest tag for About, or "dev" when the repo has no tags
+tag := `git describe --tags --abbrev=0 2>$null; if (-not $?) { "dev" }; exit 0`
+goflags := "-ldflags \"-H windowsgui -X main.version=" + tag + "\""
 
 # list recipes
 default:
