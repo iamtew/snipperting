@@ -10,7 +10,6 @@
       --bg: #8ECAE6;
       --fg: #023047;
       --muted: #219EBC;
-      --chip: #219EBC;
       --accent: #FB8500;
       --rule: #219EBC;
     }
@@ -19,7 +18,6 @@
         --bg: #023047;
         --fg: #8ECAE6;
         --muted: #219EBC;
-        --chip: #219EBC;
         --accent: #FFB703;
         --rule: #219EBC;
       }
@@ -52,7 +50,7 @@
     main { padding-bottom: 4rem; }
     .toc {
       margin: 1.75rem 0 2rem; padding: 1rem 1.25rem;
-      background: var(--chip); border-radius: 12px;
+      background: transparent; border: 2px solid var(--rule); border-radius: 12px;
     }
     .toc[hidden] { display: none; }
     .toc p { margin: 0 0 0.5rem; font-weight: 600; }
@@ -67,12 +65,12 @@
     article a { color: var(--accent); }
     article code {
       font-family: Consolas, "Cascadia Code", ui-monospace, monospace;
-      background: var(--chip); padding: 0.12em 0.4em; border-radius: 4px; font-size: 0.9em;
+      background: transparent; border: 2px solid var(--rule); padding: 0.12em 0.4em; border-radius: 4px; font-size: 0.9em;
     }
     article pre {
-      background: var(--chip); padding: 1rem 1.1rem; border-radius: 12px; overflow: auto;
+      background: transparent; border: 2px solid var(--rule); padding: 1rem 1.1rem; border-radius: 12px; overflow: auto;
     }
-    article pre code { background: none; padding: 0; }
+    article pre code { background: none; border: none; padding: 0; }
     article ul { padding-left: 1.2rem; }
     article li { margin: 0.35rem 0; }
     .err { color: var(--muted); }

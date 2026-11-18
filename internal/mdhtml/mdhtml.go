@@ -83,7 +83,7 @@ func Page(title, md string, dark bool) string {
 <style>
 html,body{margin:0;background:%s;color:%s;font:16px/1.55 "Segoe UI",system-ui,sans-serif}
 main{max-width:42rem;margin:0 auto;padding:1.5rem 1.75rem 3rem}
-.toc{margin:1.25rem 0 2rem;padding:1rem 1.2rem;background:%s;border-radius:8px}
+.toc{margin:1.25rem 0 2rem;padding:1rem 1.2rem;background:transparent;border:2px solid %s;border-radius:8px}
 .toc p{margin:0 0 .5rem;font-weight:600}
 .toc ul{margin:0;padding-left:1.2rem}
 .toc a{color:%s;text-decoration:none}
@@ -91,9 +91,9 @@ main{max-width:42rem;margin:0 auto;padding:1.5rem 1.75rem 3rem}
 h1{font-size:1.8rem;line-height:1.25}
 h2{margin-top:1.8rem;border-bottom:1px solid %s;padding-bottom:.3rem}
 a{color:%s}
-code{font-family:Consolas,"Cascadia Code",monospace;background:%s;padding:.1em .35em;border-radius:4px;font-size:.9em}
-pre{background:%s;padding:1rem;border-radius:8px;overflow:auto}
-pre code{background:none;padding:0}
+code{font-family:Consolas,"Cascadia Code",monospace;background:transparent;border:2px solid %s;padding:.1em .35em;border-radius:4px;font-size:.9em}
+pre{background:transparent;border:2px solid %s;padding:1rem;border-radius:8px;overflow:auto}
+pre code{background:none;border:none;padding:0}
 blockquote{margin:1rem 0;padding:.2rem 1rem;border-left:4px solid %s;color:%s}
 </style></head><body><main><article>%s%s%s</article></main></body></html>`,
 		html.EscapeString(title), bg, fg, chip, accent, muted, accent, chip, chip, accent, muted, preamble, toc.String(), rest)
