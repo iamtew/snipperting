@@ -22,6 +22,21 @@ func TestCreateParent(t *testing.T) {
 	}
 }
 
+func TestMoveDest(t *testing.T) {
+	if moveDest("a.md", "sub", false, true) != "sub/a.md" {
+		t.Fatal("folder")
+	}
+	if moveDest("a.md", "sub/b.md", true, true) != "sub/a.md" {
+		t.Fatal("file parent")
+	}
+	if moveDest("sub/a.md", "", false, false) != "a.md" {
+		t.Fatal("root")
+	}
+	if moveDest("x/y.md", "x/y.md", true, true) != "x/y.md" {
+		t.Fatal("self")
+	}
+}
+
 func TestRemapRel(t *testing.T) {
 	if remapRel("a.md", "b.md", "a.md") != "b.md" {
 		t.Fatal("file")

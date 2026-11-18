@@ -32,6 +32,8 @@ var (
 	pDestroyMenu     = u32.NewProc("DestroyMenu")
 	pGetCursor       = u32.NewProc("GetCursorPos")
 	pScreenToClient  = u32.NewProc("ScreenToClient")
+	pSetCapture      = u32.NewProc("SetCapture")
+	pReleaseCapture  = u32.NewProc("ReleaseCapture")
 	pSetLong    = u32.NewProc("SetWindowLongPtrW")
 	pCallOld    = u32.NewProc("CallWindowProcW")
 	pGetDC      = u32.NewProc("GetDC")

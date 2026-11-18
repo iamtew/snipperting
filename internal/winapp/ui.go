@@ -30,6 +30,8 @@ const (
 	wmVScroll    = 0x0115
 	wmMouseWheel = 0x020A
 	wmLButton    = 0x0201
+	wmMouseMove  = 0x0200
+	wmLButtonUp  = 0x0202
 	wmSetFont    = 0x0030
 	wmGetText    = 0x000D
 	wmGetTextLen = 0x000E
@@ -67,8 +69,10 @@ const (
 	tvgnCaret     = 9
 	tvifIcon      = 0x0027       // TEXT|IMAGE|SELECTEDIMAGE|PARAM
 	tvnSelChanged = ^uint32(450) // TVN_SELCHANGEDW = -451
+	tvnBeginDrag  = ^uint32(455) // TVN_BEGINDRAGW = -456
 	nmRClick      = ^uint32(4)   // NM_RCLICK = -5
 	tvmHitTest    = 0x1111
+	tvgnDrop      = 8
 	tpmReturnCmd  = 0x0100
 	tpmRightBtn   = 0x0002
 	mfString      = 0
@@ -255,6 +259,8 @@ type panel struct {
 	closing    bool
 	promptOK   bool
 	promptDone bool
+	dragging   bool
+	dragPath   string
 	ready      bool
 	chrome     *edge.Chromium
 	dataDir    string
@@ -433,6 +439,16 @@ func (p *panel) onMsg(hwnd, msg, wp, lp uintptr) bool {
 	case wmNotify:
 		if p.kind == "editor" {
 			p.onNotify(lp)
+			return true
+		}
+	case wmMouseMove:
+		if p.kind == "editor" && p.dragging {
+			p.dragOver()
+			return true
+		}
+	case wmLButtonUp:
+		if p.kind == "editor" && p.dragging {
+			p.endDrag(true)
 			return true
 		}
 	case wmSize:
@@ -1062,6 +1078,10 @@ func (p *panel) onNotify(lp uintptr) {
 		p.treeMenu()
 		return
 	}
+	if hdr.code == tvnBeginDrag {
+		p.beginDrag((*nmtv)(unsafe.Pointer(lp)))
+		return
+	}
 	nm := (*nmtv)(unsafe.Pointer(lp))
 	if nm.hdr.code != tvnSelChanged {
 		return
@@ -1139,6 +1159,81 @@ func (p *panel) treeMenu() {
 	case idCtxDelete:
 		p.deleteSel()
 	}
+}
+
+func (p *panel) inTree(sx, sy int32) bool {
+	pt := wpoint{x: sx, y: sy}
+	pScreenToClient.Call(p.tree, uintptr(unsafe.Pointer(&pt)))
+	var r wrect
+	pClient.Call(p.tree, uintptr(unsafe.Pointer(&r)))
+	return pt.x >= 0 && pt.y >= 0 && pt.x < r.right && pt.y < r.bottom
+}
+
+func moveDest(srcRel, hitRel string, hitFile, hitOK bool) string {
+	dir := ""
+	if hitOK {
+		if hitFile {
+			dir = createParent(hitRel, true)
+		} else {
+			dir = hitRel
+		}
+	}
+	return joinRel(dir, path.Base(filepath.ToSlash(srcRel)))
+}
+
+func (p *panel) beginDrag(nm *nmtv) {
+	i := int(nm.itemNew.lParam)
+	if i < 0 || i >= len(p.nodes) {
+		return
+	}
+	p.dragging = true
+	p.dragPath = p.nodes[i].path
+	pSetCapture.Call(p.hwnd)
+}
+
+func (p *panel) dragOver() {
+	var pt wpoint
+	pGetCursor.Call(uintptr(unsafe.Pointer(&pt)))
+	item := uintptr(0)
+	if p.inTree(pt.x, pt.y) {
+		if n, ok := p.treeHit(pt.x, pt.y); ok {
+			item = n.item
+		}
+	}
+	send(p.tree, tvmSelectItem, tvgnDrop, item)
+}
+
+func (p *panel) endDrag(drop bool) {
+	if !p.dragging {
+		return
+	}
+	src := p.dragPath
+	p.dragging = false
+	p.dragPath = ""
+	pReleaseCapture.Call()
+	send(p.tree, tvmSelectItem, tvgnDrop, 0)
+	if !drop || src == "" {
+		return
+	}
+	var pt wpoint
+	pGetCursor.Call(uintptr(unsafe.Pointer(&pt)))
+	if !p.inTree(pt.x, pt.y) {
+		return
+	}
+	n, ok := p.treeHit(pt.x, pt.y)
+	dest := moveDest(src, n.path, n.file, ok)
+	if dest == src {
+		return
+	}
+	if err := snippet.Move(p.dataDir, src, dest); err != nil {
+		msg := "Can't move there."
+		if errors.Is(err, os.ErrExist) {
+			msg = "A file or folder with that name already exists."
+		}
+		msgBox(p.hwnd, msg, "Editor", 0x10)
+		return
+	}
+	p.afterMove(src, dest)
 }
 
 func (p *panel) selectTree(rel string) {
