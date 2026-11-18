@@ -31,7 +31,7 @@ Hover a snippet to see its short description, if it has one.
 
 Under the line at the bottom:
 
-- **New** — drop a dated note in the snippets folder root (`note-mmDD-HHMM.md`, local time). If the clipboard has text, that text is the note body. Edit then opens that file.
+- **New** — drop a dated note in the snippets folder root (`note-mmDD-HHMM.md`, local time). If the clipboard has text, that text is the note body. Edit then opens that file with the caret in the body, after any pasted text (or on a blank line if the clipboard was empty).
 - **Edit** — write and organize snippets
 - **Preferences** — folder, theme, and bulk settings
 - **Help** — this guide
