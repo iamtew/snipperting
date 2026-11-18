@@ -34,11 +34,12 @@ func main() {
 			fatal(err)
 		}
 		svg := strings.ReplaceAll(string(b), "currentColor", "#111111")
+		svg = strings.ReplaceAll(svg, `stroke-width="2"`, `stroke-width="1.5"`)
 		icon, err := oksvg.ReadIconStream(strings.NewReader(svg))
 		if err != nil {
 			fatal(err)
 		}
-		const s = 16
+		const s = 24
 		icon.SetTarget(0, 0, s, s)
 		img := image.NewRGBA(image.Rect(0, 0, s, s))
 		scan := rasterx.NewScannerGV(s, s, img, img.Bounds())

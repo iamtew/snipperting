@@ -209,7 +209,7 @@ func drawGlyph(hdc uintptr, name string, rc wrect) {
 	if hb == 0 {
 		return
 	}
-	const s = 16
+	s := int32(iconPx)
 	x := rc.left + (rc.right-rc.left-s)/2
 	y := rc.top + (rc.bottom-rc.top-s)/2
 	src, _, _ := pCreateDC.Call(hdc)
@@ -218,7 +218,7 @@ func drawGlyph(hdc uintptr, name string, rc wrect) {
 	}
 	old, _, _ := pSelect.Call(src, hb)
 	bf := uintptr(0) | uintptr(255)<<16 | uintptr(1)<<24
-	pAlpha.Call(hdc, uintptr(x), uintptr(y), s, s, src, 0, 0, s, s, bf)
+	pAlpha.Call(hdc, uintptr(x), uintptr(y), uintptr(s), uintptr(s), src, 0, 0, uintptr(s), uintptr(s), bf)
 	pSelect.Call(src, old)
 	pDeleteDC.Call(src)
 }

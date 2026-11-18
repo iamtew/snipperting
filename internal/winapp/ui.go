@@ -63,9 +63,10 @@ const (
 	tvnSelChanged = ^uint32(450) // TVN_SELCHANGEDW = -451
 	ilcColor32    = 0x20
 	sideW         = int32(260)
-	barH          = int32(32)
+	barH          = int32(40)
 	tabH          = int32(28)
-	iconBtnS      = int32(26)
+	iconBtnS      = int32(32)
+	iconPx        = 24
 
 	tcmInsert    = 0x133E
 	tcmSetCur    = 0x130C
@@ -659,8 +660,8 @@ func openEditor(file string) {
 	p.hwnd = uintptr(frame("Editor", 1100, 720))
 	panels[p.hwnd] = p
 	note := p.iconBtn(p.hwnd, "New note", "file-plus", 8, 4)
-	folder := p.iconBtn(p.hwnd, "New folder", "folder-plus", 36, 4)
-	save := p.iconBtn(p.hwnd, "Save", "device-floppy", 64, 4)
+	folder := p.iconBtn(p.hwnd, "New folder", "folder-plus", 44, 4)
+	save := p.iconBtn(p.hwnd, "Save", "device-floppy", 80, 4)
 	p.clicks[note] = p.newNote
 	p.clicks[folder] = p.newFolder
 	p.clicks[save] = p.saveActive
@@ -679,7 +680,7 @@ func openEditor(file string) {
 		b := p.iconBtn(p.hwnd, f.title, f.icon, x, 4)
 		kind := f.kind
 		p.clicks[b] = func() { p.snipFmt(kind) }
-		x += 28
+		x += 36
 	}
 	p.tree = uintptr(create(p.hwnd, "SysTreeView32", "", wsChild|wsVis|tvsHasButtons|tvsShowSelAlways|tvsFullRowSelect, 8, barH, sideW, 640, 0))
 	explorerTheme(p.tree)
@@ -821,7 +822,7 @@ func (p *panel) treeIcons() {
 		pImgDestroy.Call(p.himl)
 		p.himl = 0
 	}
-	h, _, _ := pImgCreate.Call(16, 16, ilcColor32, 2, 1)
+	h, _, _ := pImgCreate.Call(uintptr(iconPx), uintptr(iconPx), ilcColor32, 2, 1)
 	if h == 0 {
 		return
 	}

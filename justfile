@@ -31,7 +31,7 @@ icon:
 docs-logo:
     Copy-Item -Force assets/logo.png docs/logo.png
 
-# rasterize web/vendor/tabler/*.svg to 16px ico for the tray menu
+# rasterize web/vendor/tabler/*.svg to 24px ico for tray and editor chrome
 tabler:
     go run ./tools/tabler
 
