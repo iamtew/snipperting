@@ -63,7 +63,7 @@ Wow a snippet body, so fancy!
 The editor is a native window. The file list is a native tree of the data dir (all `.md` files, including hidden, and empty folders).
 Toolbar: New note, New folder, Save. New note writes a `.md` with the default `----` header.
 Native tabs keep several notes open. Closing a dirty tab (or the window) prompts before discard. Ctrl+S saves the active tab.
-The text pane is one Monaco (full Markdown) hosted as a child of that window, not a separate browser window and not the system browser. Monaco follows Windows light/dark.
+The text pane is one Monaco (full Markdown) hosted as a child of that window, not a separate browser window and not the system browser. Monaco follows the Preferences theme.
 Launched from the tray menu, it opens on the file tree. Save writes the `.md` file, header included.
 
 ## Preferences

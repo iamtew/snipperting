@@ -152,6 +152,9 @@ type panel struct {
 	clicks     map[uintptr]func()
 	dataEdit   uintptr
 	clipCheck  uintptr
+	themeSys   uintptr
+	themeLight uintptr
+	themeDark  uintptr
 	bulk       uintptr
 	placed     []placed
 	rows       int
@@ -394,8 +397,18 @@ func openPrefs() {
 	p.clicks[save] = p.savePrefs
 	p.clipCheck = uintptr(create(p.hwnd, "BUTTON", "Show copied notice", wsChild|wsVis|wsTab|bsAutoCheck, 12, 64, 220, 24, 0))
 	themeExplorer(p.clipCheck)
-	p.static(p.hwnd, "Bulk Edit", 12, 94, 200, 18)
-	p.bulk = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsVScroll|wsClip, 0, 116, 704, 404, 0))
+	p.static(p.hwnd, "Theme", 12, 94, 80, 18)
+	p.themeSys = p.pushLike(p.hwnd, "System", false)
+	p.themeLight = p.pushLike(p.hwnd, "Light", false)
+	p.themeDark = p.pushLike(p.hwnd, "Dark", false)
+	move(p.themeSys, 12, 114, 80, 24)
+	move(p.themeLight, 96, 114, 80, 24)
+	move(p.themeDark, 180, 114, 80, 24)
+	p.clicks[p.themeSys] = func() { p.applyTheme("system") }
+	p.clicks[p.themeLight] = func() { p.applyTheme("light") }
+	p.clicks[p.themeDark] = func() { p.applyTheme("dark") }
+	p.static(p.hwnd, "Bulk Edit", 12, 148, 200, 18)
+	p.bulk = uintptr(create(p.hwnd, "", "", wsChild|wsVis|wsVScroll|wsClip, 0, 170, 704, 350, 0))
 	panels[p.bulk] = p
 	p.rebuildPrefs()
 }
@@ -405,6 +418,25 @@ func (p *panel) savePrefs() {
 	notice := send(p.clipCheck, bmGetCheck, 0, 0) != 0
 	_ = uiCfg.Set(config.File{DataDir: textOf(p.dataEdit), Theme: cur.Theme, ClipNotice: notice})
 	p.rebuildPrefs()
+}
+
+func (p *panel) applyTheme(name string) {
+	notice := send(p.clipCheck, bmGetCheck, 0, 0) != 0
+	_ = uiCfg.Set(config.File{DataDir: textOf(p.dataEdit), Theme: name, ClipNotice: notice})
+	p.markTheme(name)
+	reloadTheme()
+}
+
+func (p *panel) markTheme(name string) {
+	if p.on == nil {
+		p.on = map[uintptr]bool{}
+	}
+	p.on[p.themeSys] = name == "system"
+	p.on[p.themeLight] = name == "light"
+	p.on[p.themeDark] = name == "dark"
+	invalidate(p.themeSys)
+	invalidate(p.themeLight)
+	invalidate(p.themeDark)
 }
 
 func (p *panel) rebuildPrefs() {
@@ -418,6 +450,7 @@ func (p *panel) rebuildPrefs() {
 	p.scroll = 0
 	cur := uiCfg.Get()
 	setText(p.dataEdit, cur.DataDir)
+	p.markTheme(cur.Theme)
 	if p.clipCheck != 0 {
 		v := uintptr(0)
 		if cur.ClipNotice {
@@ -1030,7 +1063,7 @@ func (p *panel) onSize() {
 			move(p.dataEdit, 12, 32, w-120, 24)
 		}
 		if p.bulk != 0 {
-			move(p.bulk, 0, 116, w, h-116)
+			move(p.bulk, 0, 170, w, h-170)
 			p.layoutBulk()
 		}
 	case "editor":

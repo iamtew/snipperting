@@ -185,6 +185,18 @@ func messageFont() uintptr {
 	return h
 }
 
+func wantDark() bool {
+	if uiCfg != nil {
+		switch uiCfg.Get().Theme {
+		case "dark":
+			return true
+		case "light":
+			return false
+		}
+	}
+	return appsDark()
+}
+
 func appsDark() bool {
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Themes\Personalize`, registry.QUERY_VALUE)
 	if err != nil {
@@ -219,7 +231,7 @@ func loadPalette() {
 		pDeleteObj.Call(uiPal.fieldBrush)
 		pDeleteObj.Call(uiPal.accBrush)
 	}
-	uiPal.dark = appsDark()
+	uiPal.dark = wantDark()
 	uiPal.accent = systemAccent()
 	if lum(uiPal.accent) > 160 {
 		uiPal.accentText = rgb(0, 0, 0)
@@ -400,6 +412,9 @@ func reloadTheme() {
 		invalidate(p.bulk)
 		invalidate(p.tabs)
 		invalidate(p.tree)
+		if p.chrome != nil && p.ready {
+			p.push()
+		}
 	}
 }
 

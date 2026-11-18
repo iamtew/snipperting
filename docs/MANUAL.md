@@ -49,7 +49,7 @@ Click the tray icon for a native Windows menu (no extra window).
 
 ## Editor
 
-Edit opens a native window. The file tree is native (all `.md` files and folders). New note, New folder, and Save sit on the toolbar. Tabs keep several notes open; Close tab or closing the window prompts if a note is unsaved. Ctrl+S saves the active tab. The text area is Monaco inside that window. Save writes the `.md` file, header included. Monaco follows Windows light/dark.
+Edit opens a native window. The file tree is native (all `.md` files and folders). New note, New folder, and Save sit on the toolbar. Tabs keep several notes open; Close tab or closing the window prompts if a note is unsaved. Ctrl+S saves the active tab. The text area is Monaco inside that window. Save writes the `.md` file, header included. Monaco follows the Preferences theme.
 
 ## Preferences
 
