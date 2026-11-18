@@ -431,7 +431,7 @@ func wndProc(hwnd, msg, wp, lp uintptr) uintptr {
 			hideCopiedToast()
 			return 0
 		}
-		WatchForeground()
+		onUITimer(wp)
 		return 0
 	}
 	if p := panels[hwnd]; p != nil {

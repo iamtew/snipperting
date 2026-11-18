@@ -24,6 +24,7 @@ var (
 	procGlobalLock   = kernel32.NewProc("GlobalLock")
 	procGlobalUnlock = kernel32.NewProc("GlobalUnlock")
 	procGlobalSize   = kernel32.NewProc("GlobalSize")
+	procGlobalFree   = kernel32.NewProc("GlobalFree")
 )
 
 func SetClipboard(text string) error {
@@ -43,6 +44,7 @@ func SetClipboard(text string) error {
 	}
 	p, _, err := procGlobalLock.Call(h)
 	if p == 0 {
+		procGlobalFree.Call(h) // still ours until SetClipboardData succeeds
 		return err
 	}
 	dst := unsafe.Slice((*uint16)(unsafe.Pointer(p)), len(utf16))
@@ -50,6 +52,7 @@ func SetClipboard(text string) error {
 	procGlobalUnlock.Call(h)
 	r, _, err := procSetClip.Call(cfUnicodeText, h)
 	if r == 0 {
+		procGlobalFree.Call(h) // SetClipboardData did not take ownership
 		return err
 	}
 	return nil

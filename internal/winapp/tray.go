@@ -141,16 +141,22 @@ func addNodes(parent *systray.MenuItem, dataDir string, nodes []snippet.Node) {
 func fireSnippet(dataDir, rel, action string) {
 	raw, err := snippet.Read(dataDir, rel)
 	if err != nil {
+		Alert("Can't read that note.")
 		return
 	}
 	body := snippet.Parse(raw).Body
 	copied := false
 	for _, a := range snippet.ParseActions(action) {
 		if a == "inject" {
-			_ = Inject(body)
+			if err := Inject(body); err != nil {
+				Alert("Can't inject that note.")
+			}
 			continue
 		}
-		_ = SetClipboard(body)
+		if err := SetClipboard(body); err != nil {
+			Alert("Can't copy that note.")
+			continue
+		}
 		copied = true
 	}
 	if copied {

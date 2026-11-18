@@ -2,6 +2,8 @@ package winapp
 
 import (
 	"os"
+	"sync"
+	"sync/atomic"
 	"time"
 	"unsafe"
 
@@ -24,7 +26,17 @@ var (
 	procGetWindowThread  = user32.NewProc("GetWindowThreadProcessId")
 	procGetCurrentThread = kernel32.NewProc("GetCurrentThreadId")
 	procSetTimer         = user32.NewProc("SetTimer")
-	lastForeground       uintptr
+	procKillTimer        = user32.NewProc("KillTimer")
+	lastForeground       atomic.Uintptr
+	clipRestoreMu        sync.Mutex
+	clipRestorePrev      string
+	clipRestoreArmed     bool
+)
+
+const (
+	fgWatchTimerID    = 1
+	clipRestoreTimerID = 2
+	clipRestoreMS      = 500
 )
 
 type guiThreadInfo struct {
@@ -36,22 +48,22 @@ type guiThreadInfo struct {
 }
 
 func StartForegroundWatch(hwnd uintptr) {
-	procSetTimer.Call(hwnd, 1, 100, 0)
-}
-
-func WatchForeground() {
-	rememberIfOther()
+	procSetTimer.Call(hwnd, fgWatchTimerID, 100, 0)
 }
 
 func RememberForeground() {
-	rememberIfOther()
-}
-
-func rememberIfOther() {
 	h, _, _ := procGetForeground.Call()
 	if keepForeground(h) {
-		lastForeground = h
+		lastForeground.Store(h)
 	}
+}
+
+func onUITimer(id uintptr) {
+	if id == clipRestoreTimerID {
+		flushClipRestore()
+		return
+	}
+	RememberForeground()
 }
 
 func keepForeground(h uintptr) bool {
@@ -76,7 +88,7 @@ func keepForeground(h uintptr) bool {
 }
 
 func RestoreForeground() {
-	h := lastForeground
+	h := lastForeground.Load()
 	if h == 0 {
 		return
 	}
@@ -128,12 +140,40 @@ func Inject(text string) error {
 	}
 	RestoreForeground()
 	time.Sleep(40 * time.Millisecond)
-	if err := sendCtrlV(); err != nil {
-		_ = SetClipboard(prev)
-		return err
+	err := sendCtrlV()
+	armClipRestore(prev)
+	return err
+}
+
+func armClipRestore(prev string) {
+	clipRestoreMu.Lock()
+	if !clipRestoreArmed {
+		clipRestorePrev = prev
+		clipRestoreArmed = true
 	}
-	time.Sleep(40 * time.Millisecond)
-	return SetClipboard(prev)
+	clipRestoreMu.Unlock()
+	h := uiHwnd
+	if h == 0 {
+		flushClipRestore()
+		return
+	}
+	procSetTimer.Call(h, clipRestoreTimerID, clipRestoreMS, 0)
+}
+
+func flushClipRestore() {
+	if h := uiHwnd; h != 0 {
+		procKillTimer.Call(h, clipRestoreTimerID)
+	}
+	clipRestoreMu.Lock()
+	if !clipRestoreArmed {
+		clipRestoreMu.Unlock()
+		return
+	}
+	prev := clipRestorePrev
+	clipRestoreArmed = false
+	clipRestorePrev = ""
+	clipRestoreMu.Unlock()
+	_ = SetClipboard(prev)
 }
 
 const (
