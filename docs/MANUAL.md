@@ -53,10 +53,10 @@ Edit opens a native window. The file tree is native (all `.md` files and folders
 
 ## Preferences
 
-- **Data directory** — where snippets live
+- **Data directory** — where snippets live. Browse opens a folder picker; picking a folder saves it
 - **Show copied notice** — on-screen indicator after a clipboard copy (default on)
 - **Theme** — System (follow Windows), Light, or Dark. Applies immediately.
-- **Bulk Edit** — Inject vs Clipboard are two buttons; the pressed one is the current action. State and hidden stay on/off and shown/hidden.
+- **Bulk Edit** — rows list filenames. Inject vs Clipboard are two buttons; the pressed one is the current action. State and hidden stay on/off and shown/hidden.
 
 ## Config
 

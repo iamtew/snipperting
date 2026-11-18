@@ -76,7 +76,8 @@ Things to configure, starting out:
 - Bulk Edit
 
 ### Data directory: 
-Where all snippets are stored, default `~/.snipperting`
+Where all snippets are stored, default `~/.snipperting`.
+Preferences shows the current path and a Browse button. Browse opens the native Windows folder picker. Picking a folder writes `dataDir` in config.json and refreshes Bulk Edit. Cancel leaves the path unchanged.
 
 ### Clipboard notice:
 When a snippet action copies to the clipboard, a small native on-screen notice says it was copied. It must not steal focus. Default on. A checkbox in Preferences enables or disables it. Inject does not show this notice.
@@ -89,7 +90,7 @@ Change things in bulk over multiple snippets.
 Snippet settings such as state, action, hidden. 
 This will update the settings in each and every snippet file.
 Looks like a labeled list, and every row has:
-- left aligned: filename, label
+- left aligned: filename
 - right aligned:
   - action: two push-like buttons, Inject and Clipboard; the selected one is pressed
   - state: on/off
