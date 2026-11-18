@@ -10,12 +10,37 @@
     img.logo { width: 96px; height: 96px; }
     a { color: #0f766e; }
     code { background: #e7e5e4; padding: 0 4px; }
+    .gh {
+      display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem;
+      margin: 1.25rem 0; padding: 0;
+    }
+    .gh a { display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; }
+    .gh a:hover { text-decoration: underline; }
+    .gh .i {
+      width: 1.15rem; height: 1.15rem; background: currentColor;
+      -webkit-mask: var(--icon) no-repeat center / contain;
+      mask: var(--icon) no-repeat center / contain;
+    }
   </style>
 </head>
 <body>
   <p><img class="logo" src="logo.png" alt="snipperting"></p>
   <h1>snipperting</h1>
   <p>Save text snippets on Windows and fire them from the system tray. Copy to the clipboard, or inject at the caret.</p>
+  <nav class="gh" aria-label="GitHub">
+    <a href="https://github.com/iamtew/snipperting" target="_blank" rel="noopener noreferrer">
+      <span class="i" style="--icon: url(vendor/tabler/brand-github.svg)"></span>
+      Source
+    </a>
+    <a href="https://github.com/iamtew/snipperting/releases/latest" target="_blank" rel="noopener noreferrer">
+      <span class="i" style="--icon: url(vendor/tabler/download.svg)"></span>
+      Latest release
+    </a>
+    <a href="https://github.com/iamtew/snipperting/issues" target="_blank" rel="noopener noreferrer">
+      <span class="i" style="--icon: url(vendor/tabler/bug.svg)"></span>
+      Issues
+    </a>
+  </nav>
   <ul>
     <li>Markdown files in a folder you choose (default <code>~/.snipperting</code>)</li>
     <li>Folders become menu categories</li>
