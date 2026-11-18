@@ -61,7 +61,7 @@ Wow a snippet body, so fancy!
 
 ## Editor
 The editor is a native window. The file list is a native tree of the data dir (all `.md` files, including hidden, and empty folders). Folders nest with indent and Tabler file/folder icons, like a file explorer.
-New note, New folder, and Save are Tabler icon buttons on the explorer (not a window-wide text toolbar). New note writes a `.md` with the default `----` header.
+New note, New folder, and Save are Tabler icon buttons on the explorer (not a window-wide text toolbar). New note and New folder use the selected folder, or the folder of the selected file. New note writes a `.md` with the default `----` header.
 Native tabs keep several notes open. Each tab has a close control on the tab itself. Closing a dirty tab (or the window) prompts before discard. Ctrl+S saves the active tab.
 A native markdown format bar (bold, italic, strikethrough, heading, quote, lists, code, link) wraps the Monaco selection. It does not live in the WebView.
 The text pane is one Monaco (full Markdown) hosted as a child of that window, not a separate browser window and not the system browser. Monaco follows the Preferences theme.

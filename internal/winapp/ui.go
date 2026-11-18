@@ -57,6 +57,8 @@ const (
 	tviRoot       = ^uintptr(0xFFFF) // (HTREEITEM)-0x10000
 	tvmInsert     = 0x1132
 	tvmDelete     = 0x1101
+	tvmSelectItem = 0x110B
+	tvgnCaret     = 9
 	tvifIcon      = 0x0027       // TEXT|IMAGE|SELECTEDIMAGE|PARAM
 	tvnSelChanged = ^uint32(450) // TVN_SELCHANGEDW = -451
 	ilcColor32    = 0x20
@@ -102,6 +104,7 @@ type openReq struct{ kind, file string }
 type tnode struct {
 	path string
 	file bool
+	item uintptr
 }
 
 type placed struct {
@@ -192,7 +195,8 @@ type panel struct {
 	on         map[uintptr]bool
 	glyph      map[uintptr]string
 	himl       uintptr
-	selDir     string
+	selPath    string
+	selFile    bool
 	curPath    string
 	pending    string
 	dropAfter  string
@@ -761,6 +765,7 @@ func (p *panel) fillTree() {
 	if p.tree == 0 {
 		return
 	}
+	keep := p.selPath
 	send(p.tree, tvmDelete, 0, tviRoot)
 	p.nodes = nil
 	tree, err := snippet.Walk(p.dataDir)
@@ -768,6 +773,7 @@ func (p *panel) fillTree() {
 		return
 	}
 	p.addTree(tviRoot, tree.Children)
+	p.selectTree(keep)
 }
 
 func (p *panel) addTree(parent uintptr, nodes []snippet.Node) {
@@ -778,12 +784,13 @@ func (p *panel) addTree(parent uintptr, nodes []snippet.Node) {
 		} else if label == "" {
 			label = n.Name
 		}
-		p.nodes = append(p.nodes, tnode{path: n.Path, file: n.Type == "file"})
 		img := int32(0)
 		if n.Type == "file" {
 			img = 1
 		}
-		h := p.insertTree(parent, label, uintptr(len(p.nodes)-1), img)
+		idx := len(p.nodes)
+		h := p.insertTree(parent, label, uintptr(idx), img)
+		p.nodes = append(p.nodes, tnode{path: n.Path, file: n.Type == "file", item: h})
 		if n.Type == "dir" {
 			p.addTree(h, n.Children)
 		}
@@ -926,11 +933,26 @@ func (p *panel) onNotify(lp uintptr) {
 		return
 	}
 	n := p.nodes[i]
+	p.selPath = n.path
+	p.selFile = n.file
 	if n.file {
 		p.openPath(n.path)
+	}
+}
+
+func (p *panel) selectTree(rel string) {
+	if rel == "" || p.tree == 0 {
 		return
 	}
-	p.selDir = n.path
+	for _, n := range p.nodes {
+		if n.path != rel {
+			continue
+		}
+		p.selPath = n.path
+		p.selFile = n.file
+		send(p.tree, tvmSelectItem, tvgnCaret, n.item)
+		return
+	}
 }
 
 func (p *panel) loadFile(rel string) {
@@ -1102,18 +1124,22 @@ func tabTitle(rel string, dirty bool) string {
 	return name
 }
 
-func (p *panel) folderPrefix() string {
-	if p.selDir != "" {
-		return p.selDir
-	}
-	if p.curPath == "" {
+func createParent(selPath string, isFile bool) string {
+	if selPath == "" {
 		return ""
 	}
-	d := path.Dir(filepath.ToSlash(p.curPath))
+	if !isFile {
+		return selPath
+	}
+	d := path.Dir(filepath.ToSlash(selPath))
 	if d == "." {
 		return ""
 	}
 	return d
+}
+
+func (p *panel) folderPrefix() string {
+	return createParent(p.selPath, p.selFile)
 }
 
 func leafName(s string) (string, bool) {
@@ -1144,7 +1170,8 @@ func (p *panel) newFolder() {
 	if err := snippet.CreateDir(p.dataDir, rel); err != nil {
 		return
 	}
-	p.selDir = rel
+	p.selPath = rel
+	p.selFile = false
 	p.fillTree()
 }
 
@@ -1164,6 +1191,8 @@ func (p *panel) newNote() {
 	if !strings.EqualFold(filepath.Ext(rel), ".md") {
 		rel = strings.TrimSuffix(rel, filepath.Ext(rel)) + ".md"
 	}
+	p.selPath = rel
+	p.selFile = true
 	p.fillTree()
 	p.openPath(rel)
 }
