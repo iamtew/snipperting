@@ -18,21 +18,52 @@ import (
 
 func main() {
 	if len(os.Args) != 3 {
-		fmt.Fprintln(os.Stderr, "usage: png2ico in.{svg,png} out.ico")
-		os.Exit(2)
+		usage()
 	}
 	in, out := os.Args[1], os.Args[2]
 	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
 		fatal(err)
 	}
-	img, err := decode(in)
+	var err error
+	switch strings.ToLower(filepath.Ext(out)) {
+	case ".png":
+		err = writePNG(in, out, 64)
+	case ".ico":
+		err = writeICO(in, out)
+	default:
+		usage()
+	}
 	if err != nil {
 		fatal(err)
 	}
-	sized := resizeNN(img, 32, 32)
+}
+
+func usage() {
+	fmt.Fprintln(os.Stderr, "usage: png2ico in.{svg,png} out.{ico,png}")
+	os.Exit(2)
+}
+
+func writePNG(in, out string, size int) error {
+	img, err := decodeAt(in, size)
+	if err != nil {
+		return err
+	}
+	f, err := os.Create(out)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return png.Encode(f, img)
+}
+
+func writeICO(in, out string) error {
+	img, err := decodeAt(in, 32)
+	if err != nil {
+		return err
+	}
 	var pngBuf bytes.Buffer
-	if err := png.Encode(&pngBuf, sized); err != nil {
-		fatal(err)
+	if err := png.Encode(&pngBuf, img); err != nil {
+		return err
 	}
 	payload := pngBuf.Bytes()
 	var ico bytes.Buffer
@@ -48,24 +79,34 @@ func main() {
 	_ = binary.Write(&ico, binary.LittleEndian, uint32(len(payload)))
 	_ = binary.Write(&ico, binary.LittleEndian, uint32(6+16))
 	ico.Write(payload)
-	if err := os.WriteFile(out, ico.Bytes(), 0o644); err != nil {
-		fatal(err)
-	}
+	return os.WriteFile(out, ico.Bytes(), 0o644)
 }
 
 func decode(path string) (image.Image, error) {
+	return decodeAt(path, 32)
+}
+
+func decodeAt(path string, size int) (image.Image, error) {
 	if strings.EqualFold(filepath.Ext(path), ".svg") {
-		return decodeSVG(path)
+		return decodeSVG(path, size)
 	}
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	return png.Decode(f)
+	img, err := png.Decode(f)
+	if err != nil {
+		return nil, err
+	}
+	b := img.Bounds()
+	if b.Dx() == size && b.Dy() == size {
+		return img, nil
+	}
+	return resizeNN(img, size, size), nil
 }
 
-func decodeSVG(path string) (image.Image, error) {
+func decodeSVG(path string, size int) (image.Image, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -77,18 +118,18 @@ func decodeSVG(path string) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	const s = 32
+	s := float64(size)
 	// oksvg scales path coords in SetTarget but not stroke-width.
 	if icon.ViewBox.W > 0 {
-		scale := float64(s) / icon.ViewBox.W
+		scale := s / icon.ViewBox.W
 		for i := range icon.SVGPaths {
 			icon.SVGPaths[i].LineWidth *= scale
 		}
 	}
 	icon.SetTarget(0, 0, s, s)
-	img := image.NewRGBA(image.Rect(0, 0, s, s))
-	scan := rasterx.NewScannerGV(s, s, img, img.Bounds())
-	icon.Draw(rasterx.NewDasher(s, s, scan), 1)
+	img := image.NewRGBA(image.Rect(0, 0, size, size))
+	scan := rasterx.NewScannerGV(size, size, img, img.Bounds())
+	icon.Draw(rasterx.NewDasher(size, size, scan), 1)
 	if !hasInk(img) {
 		return nil, fmt.Errorf("%s: raster is empty", path)
 	}

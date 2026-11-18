@@ -21,3 +21,14 @@ func TestDecodeLogoSVGHasInk(t *testing.T) {
 		t.Fatalf("logo raster ink out of range: %d pixels", n)
 	}
 }
+
+func TestDecodeLogoSVG64(t *testing.T) {
+	img, err := decodeAt("../../assets/logo.svg", 64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := img.Bounds()
+	if b.Dx() != 64 || b.Dy() != 64 {
+		t.Fatalf("got %dx%d want 64x64", b.Dx(), b.Dy())
+	}
+}
