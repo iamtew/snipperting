@@ -34,7 +34,7 @@ Under the line at the bottom:
 - **Edit** — write and organize snippets
 - **Preferences** — folder, theme, and bulk settings
 - **Help** — this guide
-- **About** — version
+- **About** — version, website, and GitHub repo
 - **Exit** — quit snipperting (the icon goes away until you start it again)
 
 ## Edit your snippets
