@@ -3,9 +3,12 @@ package snippet
 import (
 	"bytes"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"golang.org/x/sys/windows"
 )
 
 const fence = "----"
@@ -246,17 +249,28 @@ func JoinUnder(dataDir, rel string) (string, error) {
 	if rel == "" || filepath.IsAbs(filepath.FromSlash(rel)) || strings.Contains(rel, ":") {
 		return "", os.ErrInvalid
 	}
+	clean := path.Clean(rel)
+	if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") {
+		return "", os.ErrInvalid
+	}
+	for _, p := range strings.Split(clean, "/") {
+		if p == ".." {
+			return "", os.ErrInvalid
+		}
+	}
 	base, err := filepath.Abs(dataDir)
 	if err != nil {
 		return "", err
 	}
-	full := filepath.Join(base, filepath.FromSlash(rel))
+	full := filepath.Join(base, filepath.FromSlash(clean))
 	full, err = filepath.Abs(full)
 	if err != nil {
 		return "", err
 	}
 	sep := string(os.PathSeparator)
-	if full != base && !strings.HasPrefix(strings.ToLower(full), strings.ToLower(base)+sep) {
+	baseLow := strings.ToLower(base)
+	fullLow := strings.ToLower(full)
+	if fullLow == baseLow || !strings.HasPrefix(fullLow, baseLow+sep) {
 		return "", os.ErrInvalid
 	}
 	return full, nil
@@ -294,7 +308,16 @@ func CreateDir(dataDir, rel string) error {
 	if err != nil {
 		return err
 	}
-	return os.MkdirAll(p, 0o755)
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		return err
+	}
+	if err := os.Mkdir(p, 0o755); err != nil {
+		if os.IsExist(err) {
+			return os.ErrExist
+		}
+		return err
+	}
+	return nil
 }
 
 func Remove(dataDir, rel string) error {
@@ -338,19 +361,45 @@ func Move(dataDir, srcRel, destRel string) error {
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
 	}
-	return os.Rename(src, dest)
+	from, err := windows.UTF16PtrFromString(src)
+	if err != nil {
+		return err
+	}
+	to, err := windows.UTF16PtrFromString(dest)
+	if err != nil {
+		return err
+	}
+	if err := windows.MoveFileEx(from, to, 0); err != nil {
+		if err == windows.ERROR_ALREADY_EXISTS {
+			return os.ErrExist
+		}
+		return err
+	}
+	return nil
 }
 
 func CreateFile(dataDir, rel, body string) error {
 	if !strings.EqualFold(filepath.Ext(rel), ".md") {
-		rel = strings.TrimSuffix(rel, filepath.Ext(rel)) + ".md"
+		rel = rel + ".md"
 	}
 	p, err := JoinUnder(dataDir, rel)
 	if err != nil {
 		return err
 	}
-	if _, err := os.Stat(p); err == nil {
-		return os.ErrExist
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		return err
 	}
-	return Write(dataDir, rel, Encode(defaults(), body))
+	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		if os.IsExist(err) {
+			return os.ErrExist
+		}
+		return err
+	}
+	_, werr := f.Write(Encode(defaults(), body))
+	cerr := f.Close()
+	if werr != nil {
+		return werr
+	}
+	return cerr
 }

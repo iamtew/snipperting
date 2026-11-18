@@ -72,6 +72,11 @@ func TestWalkAndJoin(t *testing.T) {
 	if _, err := JoinUnder(dir, "../secret.md"); err == nil {
 		t.Fatal("expected reject")
 	}
+	for _, bad := range []string{".", "a/..", "foo/../..", ".."} {
+		if _, err := JoinUnder(dir, bad); err == nil {
+			t.Fatalf("expected reject %q", bad)
+		}
+	}
 	p, err := JoinUnder(dir, "work/b.md")
 	if err != nil {
 		t.Fatal(err)
@@ -91,6 +96,12 @@ func TestCreateDirAndFile(t *testing.T) {
 	}
 	if err := CreateFile(dir, "notes/hello.md", ""); err != os.ErrExist {
 		t.Fatalf("exist %v", err)
+	}
+	if err := CreateFile(dir, "notes/keep.bak", ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "notes", "keep.bak.md")); err != nil {
+		t.Fatal(err)
 	}
 	if err := CreateFile(dir, "../nope.md", ""); err == nil {
 		t.Fatal("expected reject")

@@ -43,6 +43,9 @@ func TestMoveRejects(t *testing.T) {
 	if err := Move(dir, "b.md", "a/n.md"); !errors.Is(err, os.ErrExist) {
 		t.Fatalf("exist: %v", err)
 	}
+	if err := CreateDir(dir, "a"); !errors.Is(err, os.ErrExist) {
+		t.Fatalf("dir exist: %v", err)
+	}
 	if err := Move(dir, "b.md", "../out.md"); !errors.Is(err, os.ErrInvalid) {
 		t.Fatalf("escape: %v", err)
 	}
