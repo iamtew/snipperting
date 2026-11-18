@@ -119,6 +119,7 @@ Subfolders are displayed folded, can be unfolded to view items, are indented in 
 Empty data dir shows an empty-state line.
 
 ## `./docs` folder, website and documentation
+Root `README.md` (logo, short blurb, website, Just recipes) and MIT `LICENSE` live at the repo root.
 The `./docs` folder shall contain a website for GitHub pages.
 Think product page, explaining the application.
 The product page wordmark is the logo and the name `snipperting` on one row (name to the right of the logo).
