@@ -4,7 +4,7 @@ Keep bits of text you reuse all the time, then fire them from the little icon by
 
 ## Getting started
 
-After you install snipperting, start it from the Start Menu. A tray icon shows up near the clock (you may need to click the little arrow to see it).
+After you install snipperting, start it from the Start Menu. A tray icon shows up near the clock (you may need to click the little arrow to see it). No terminal window opens.
 
 Click that icon for the menu. First run also creates a snippets folder named `.snipperting` in your user folder. You can pick a different folder later in Preferences.
 

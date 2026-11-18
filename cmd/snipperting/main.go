@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -70,6 +69,6 @@ func loadIcon() []byte {
 }
 
 func fatal(err error) {
-	fmt.Fprintln(os.Stderr, err)
+	winapp.Alert(err.Error())
 	os.Exit(1)
 }

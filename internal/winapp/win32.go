@@ -124,3 +124,8 @@ func msgBox(owner uintptr, text, caption string, flags uintptr) int {
 	r, _, _ := pMsgBox.Call(owner, uintptr(unsafe.Pointer(t)), uintptr(unsafe.Pointer(c)), flags)
 	return int(r)
 }
+
+// Alert is MB_OK|MB_ICONERROR with no owner. Used when stderr is gone (GUI subsystem).
+func Alert(text string) {
+	msgBox(0, text, "snipperting", 0x10)
+}

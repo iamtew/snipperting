@@ -1,6 +1,7 @@
 # snipperting - Snippets tool for Windows
 Save text snippets and easily access them from SysTray icon.
 Windows application, accessed via menu from SysTray.
+The process is a Windows GUI app: no console when launched from Explorer or the Start Menu.
 Edit's WebView2 maps the on-disk `web/` folder to `https://snipperting.example/` so Monaco can load its scripts. One process at a time (named mutex).
 Snippet files, the tray menu, preferences, help, and about are native.
 Written in Go, using Justfile for command runner, ships with installer for ease of use.

@@ -2,7 +2,7 @@ set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
 # git tag at HEAD, or "dev" when untagged
 version := `git describe --tags --exact-match 2>$null; if (-not $?) { "dev" }; exit 0`
-goflags := "-ldflags \"-X main.version=" + version + "\""
+goflags := "-ldflags \"-H windowsgui -X main.version=" + version + "\""
 
 # list recipes
 default:
