@@ -18,8 +18,8 @@ Other icons used by `snipperting` shall be taken from Tabler.io/icons and vendor
 ## SysTray menu
 The tray icon uses a **native Windows menu** (left-click and right-click). It must not open a web window for the snippet list.
 SysTray menu shows list of snippets, and sub-categories of snippets.
-When a snippet is clicked in the menu, it fires its configured action.
-Action can be configured per snippet (editor / Preferences Bulk Edit).
+When a snippet is clicked in the menu, it fires its configured actions in listed order.
+Actions can be configured per snippet (editor / Preferences Bulk Edit). One snippet may list more than one action (comma-separated in the file header).
 Available actions are:
 - Clipboard - place snippet content in clipboard so it can be pasted
 - Inject - inject the snippet at cursor position, wherever it might be. The app remembers the last foreground window that is not snipperting (and not the Windows tray), so a tray click still pastes into that window.
@@ -53,7 +53,7 @@ Example: `demo-snippet.md`
 ----
 label: Demo Snippet (label will be used instead of filename in menu, if it's configured).
 about: Description of the snippet displayed when hovering an item in the menu, kinda like alt-text.
-action: inject/clipboard - action that fires when clicked.
+action: comma-separated inject and/or clipboard - actions that fire when clicked, in that order. Default clipboard. Unknown tokens dropped. At least one action.
 state: enable/disable, on/off, true/false. a bool, can be updated by clicking menu button.
 hidden: true/false - bool, hides item from menu.
 ----
@@ -88,7 +88,7 @@ Where all snippets are stored, default `~/.snipperting`.
 Preferences shows the current path and a Browse button. Browse opens the native Windows folder picker. Picking a folder writes `dataDir` in config.json and refreshes Bulk Edit. Cancel leaves the path unchanged.
 
 ### Clipboard notice:
-When a snippet action copies to the clipboard, a small native on-screen notice says it was copied. It must not steal focus. Default on. A checkbox in Preferences enables or disables it. Inject does not show this notice.
+When a snippet action copies to the clipboard, a small native on-screen notice says it was copied. It must not steal focus. Default on. A checkbox in Preferences enables or disables it. Inject does not show this notice. A snippet that lists both inject and clipboard shows the notice only for the clipboard action.
 
 ### Theme:
 Three push-like buttons: System, Light, Dark. The selected one is pressed. System follows Windows light/dark. Applies at once to native windows and Monaco. Stored as `theme` in config.json.
@@ -100,7 +100,7 @@ This will update the settings in each and every snippet file.
 Looks like a labeled list, and every row has:
 - left aligned: filename
 - right aligned:
-  - action: two push-like buttons, Inject and Clipboard; the selected one is pressed
+  - action: two push-like buttons, Inject and Clipboard; each listed action is pressed (both may be). At least one stays on. Bulk Edit writes inject before clipboard when both are on.
   - state: on/off
   - hidden: on/off
 Subfolders are displayed folded, can be unfolded to view items, are indented in display. At each indent level, snippet files are listed first, then folders (same grouping as the tray menu).

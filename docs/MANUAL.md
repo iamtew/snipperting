@@ -12,12 +12,12 @@ Only one snipperting runs at a time. Starting it again while it is already in th
 
 ## Use a snippet
 
-Open the tray menu and click a snippet.
+Open the tray menu and click a snippet. Each click runs the actions listed on that snippet, in order.
 
 - **Clipboard** puts the snippet on the clipboard. Paste with Ctrl+V as usual. A small “Copied to clipboard” notice can appear; it does not steal the keyboard. Turn it off in Preferences if it gets in the way.
 - **Inject** pastes into the last window you were typing in. The tray click would otherwise steal focus, so snipperting remembers that window (it skips itself and the Windows tray). Click the other app first, then the tray snippet.
 
-Each snippet has its own action. Change it in Preferences → Bulk Edit, or in the snippet file.
+A snippet can list both. Inject pastes, then restores whatever was on the clipboard, so `inject, clipboard` is the order that both pastes and leaves the text on the clipboard. Change actions in Preferences → Bulk Edit, or in the snippet file.
 
 **Disabled** snippets stay on the menu but are grayed out and do nothing. **Hidden** snippets are not on the menu at all. You can still see both in Edit.
 
@@ -77,7 +77,7 @@ Thanks for your time today. I will send notes after the call.
 
 - **label** — text on the menu (the file name if you leave this blank)
 - **about** — the hover hint on the menu
-- **action** — `clipboard` or `inject`
+- **action** — `clipboard` and/or `inject`, comma-separated. Unknown names are ignored. Empty means clipboard.
 - **state** — `enable` or `disable` (disabled stays on the menu, gray)
 - **hidden** — `true` hides it from the tray; `false` shows it
 
@@ -86,4 +86,4 @@ Thanks for your time today. I will send notes after the call.
 - **Data directory** — where the snippet files live. Browse opens a folder picker. Pick a folder and it is saved; Bulk Edit refreshes to match. Cancel leaves the path as it was.
 - **Show copied notice** — the small on-screen “copied” after a clipboard snippet (inject never shows it).
 - **Theme** — System (follow Windows), Light, or Dark. It applies right away to snipperting’s windows, the editor, and Help.
-- **Bulk Edit** — one row per snippet. At each indent, files come first, then folders (same as the tray). Inject and Clipboard are two buttons; the pressed one is the current action. Enabled and hidden are on/off. Changes are written into each file.
+- **Bulk Edit** — one row per snippet. At each indent, files come first, then folders (same as the tray). Inject and Clipboard are two buttons; each listed action is pressed (both may be). At least one stays on. Enabled and hidden are on/off. Changes are written into each file.
