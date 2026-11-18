@@ -86,12 +86,11 @@ $expanded = 0
 while ($expanded -lt $maxExpand) {
     $prefs = Find-ShotWindow 'Preferences'
     if (-not $prefs) { throw 'Preferences closed' }
-    $btnType = [System.Windows.Automation.ControlType]::Button
-    $typeCond = New-Object System.Windows.Automation.PropertyCondition (
-        [System.Windows.Automation.AutomationElement]::ControlTypeProperty), $btnType
-    $buttons = $prefs.FindAll($scopeDesc, $typeCond)
+    # Owner-draw folder rows are class Button but UIA ControlType Pane.
+    $kids = $prefs.FindAll($scopeDesc, [System.Windows.Automation.Condition]::TrueCondition)
     $hit = $null
-    foreach ($b in $buttons) {
+    foreach ($b in $kids) {
+        if ($b.Current.ClassName -ne 'Button') { continue }
         $n = $b.Current.Name
         if ($n.StartsWith($collapsed)) {
             $hit = $b
