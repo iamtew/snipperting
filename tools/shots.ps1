@@ -10,12 +10,31 @@ Add-Type -AssemblyName UIAutomationTypes
 Add-Type -AssemblyName System.Drawing
 Add-Type @'
 using System;
+using System.Text;
 using System.Runtime.InteropServices;
 public class ShotWin {
+    public delegate bool EnumCB(IntPtr h, IntPtr l);
     [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hwnd, IntPtr hdcBlt, uint nFlags);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hwnd, out RECT r);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
+    [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll")] public static extern bool EnumWindows(EnumCB cb, IntPtr l);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
     public struct RECT { public int Left, Top, Right, Bottom; }
+    public static IntPtr FindFrame(string titlePrefix) {
+        IntPtr found = IntPtr.Zero;
+        EnumWindows((h, l) => {
+            var c = new StringBuilder(256);
+            GetClassName(h, c, 256);
+            if (c.ToString() != "snippertingFrame") return true;
+            var t = new StringBuilder(256);
+            GetWindowText(h, t, 256);
+            if (t.ToString().StartsWith(titlePrefix)) { found = h; return false; }
+            return true;
+        }, IntPtr.Zero);
+        return found;
+    }
 }
 '@
 
@@ -52,28 +71,21 @@ New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
 $startArgs = @('--prefs', '--edit')
 if ($editFile) { $startArgs += $editFile }
-Start-Process -FilePath $exe -ArgumentList $startArgs -WorkingDirectory $exeDir | Out-Null
+# cwd = repo so findWebRoot sees ./web (config.json still sits next to the exe)
+Start-Process -FilePath $exe -ArgumentList $startArgs -WorkingDirectory $repo | Out-Null
 
-$root = [System.Windows.Automation.AutomationElement]::RootElement
-$scopeCh = [System.Windows.Automation.TreeScope]::Children
 $scopeDesc = [System.Windows.Automation.TreeScope]::Descendants
-$nameProp = [System.Windows.Automation.AutomationElement]::NameProperty
-
-function Find-ShotWindow([string]$title) {
-    $cond = New-Object System.Windows.Automation.PropertyCondition $nameProp, $title
-    return $root.FindFirst($scopeCh, $cond)
-}
 
 $deadline = [datetime]::UtcNow.AddSeconds(20)
-$prefs = $null
-$editor = $null
+$prefsHwnd = [IntPtr]::Zero
+$editorHwnd = [IntPtr]::Zero
 while ([datetime]::UtcNow -lt $deadline) {
-    if (-not $prefs) { $prefs = Find-ShotWindow 'Preferences' }
-    if (-not $editor) { $editor = Find-ShotWindow 'Editor' }
-    if ($prefs -and $editor) { break }
+    if ($prefsHwnd -eq [IntPtr]::Zero) { $prefsHwnd = [ShotWin]::FindFrame('Preferences') }
+    if ($editorHwnd -eq [IntPtr]::Zero) { $editorHwnd = [ShotWin]::FindFrame('Editor') }
+    if ($prefsHwnd -ne [IntPtr]::Zero -and $editorHwnd -ne [IntPtr]::Zero) { break }
     Start-Sleep -Milliseconds 250
 }
-if (-not $prefs -or -not $editor) {
+if ($prefsHwnd -eq [IntPtr]::Zero -or $editorHwnd -eq [IntPtr]::Zero) {
     throw 'Preferences or Editor did not open'
 }
 
@@ -84,8 +96,9 @@ $collapsed = [char]0x25B8 + ' '
 $maxExpand = 6
 $expanded = 0
 while ($expanded -lt $maxExpand) {
-    $prefs = Find-ShotWindow 'Preferences'
-    if (-not $prefs) { throw 'Preferences closed' }
+    $prefsHwnd = [ShotWin]::FindFrame('Preferences')
+    if ($prefsHwnd -eq [IntPtr]::Zero) { throw 'Preferences closed' }
+    $prefs = [System.Windows.Automation.AutomationElement]::FromHandle($prefsHwnd)
     # Owner-draw folder rows are class Button but UIA ControlType Pane.
     $kids = $prefs.FindAll($scopeDesc, [System.Windows.Automation.Condition]::TrueCondition)
     $hit = $null
@@ -98,14 +111,15 @@ while ($expanded -lt $maxExpand) {
         }
     }
     if (-not $hit) { break }
-    $pat = $hit.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
-    [void]$pat.Invoke()
+    $bh = [IntPtr]$hit.Current.NativeWindowHandle
+    [void][ShotWin]::SendMessage($bh, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero)
     $expanded++
     Start-Sleep -Milliseconds 400
 }
 
-function Save-WindowShot($el, [string]$path) {
-    $hwnd = [IntPtr]$el.Current.NativeWindowHandle
+function Save-WindowShot([string]$titlePrefix, [string]$path) {
+    $hwnd = [ShotWin]::FindFrame($titlePrefix)
+    if ($hwnd -eq [IntPtr]::Zero) { throw "no $titlePrefix window" }
     [void][ShotWin]::SetForegroundWindow($hwnd)
     Start-Sleep -Milliseconds 200
     $r = New-Object ShotWin+RECT
@@ -128,8 +142,6 @@ function Save-WindowShot($el, [string]$path) {
     $bmp.Dispose()
 }
 
-$prefs = Find-ShotWindow 'Preferences'
-$editor = Find-ShotWindow 'Editor'
-Save-WindowShot $prefs (Join-Path $outDir 'preferences.png')
-Save-WindowShot $editor (Join-Path $outDir 'editor.png')
+Save-WindowShot 'Preferences' (Join-Path $outDir 'preferences.png')
+Save-WindowShot 'Editor' (Join-Path $outDir 'editor.png')
 Write-Host "wrote $outDir"
