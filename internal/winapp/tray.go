@@ -46,6 +46,7 @@ func fillMenu(cfg *config.Store) {
 	addOpen("Help", "help")
 	addOpen("About", "about")
 	quit := systray.AddMenuItem("Exit", "Quit snipperting")
+	quit.SetIcon(menuIcon("logout"))
 	quit.Click(func() { systray.Quit() })
 }
 
@@ -64,6 +65,8 @@ func addOpen(title, kind string) {
 		it.SetIcon(menuIcon("settings"))
 	case "help":
 		it.SetIcon(menuIcon("help"))
+	case "about":
+		it.SetIcon(menuIcon("info-circle"))
 	}
 	it.Click(func() { Open(kind, "") })
 }

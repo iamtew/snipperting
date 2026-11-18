@@ -28,6 +28,12 @@ var icoSettings []byte
 //go:embed icons/help.ico
 var icoHelp []byte
 
+//go:embed icons/info-circle.ico
+var icoInfo []byte
+
+//go:embed icons/logout.ico
+var icoLogout []byte
+
 //go:embed icons/file.ico
 var icoFile []byte
 
@@ -91,6 +97,10 @@ func chromeIcon(name string) []byte {
 		return icoSettings
 	case "help":
 		return icoHelp
+	case "info-circle":
+		return icoInfo
+	case "logout":
+		return icoLogout
 	case "file":
 		return icoFile
 	case "file-plus":
