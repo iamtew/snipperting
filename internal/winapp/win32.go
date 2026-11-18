@@ -25,7 +25,13 @@ var (
 	pLoadImage  = u32.NewProc("LoadImageW")
 	pScroll     = u32.NewProc("SetScrollInfo")
 	pEnable     = u32.NewProc("EnableWindow")
-	pMsgBox     = u32.NewProc("MessageBoxW")
+	pMsgBox          = u32.NewProc("MessageBoxW")
+	pCreatePopup     = u32.NewProc("CreatePopupMenu")
+	pAppendMenu      = u32.NewProc("AppendMenuW")
+	pTrackPopup      = u32.NewProc("TrackPopupMenu")
+	pDestroyMenu     = u32.NewProc("DestroyMenu")
+	pGetCursor       = u32.NewProc("GetCursorPos")
+	pScreenToClient  = u32.NewProc("ScreenToClient")
 	pSetLong    = u32.NewProc("SetWindowLongPtrW")
 	pCallOld    = u32.NewProc("CallWindowProcW")
 	pGetDC      = u32.NewProc("GetDC")
@@ -63,6 +69,8 @@ type wmsg struct {
 }
 
 type wrect struct{ left, top, right, bottom int32 }
+
+type wpoint struct{ x, y int32 }
 
 func post(h, msg, wp, lp uintptr) { pPost.Call(h, msg, wp, lp) }
 

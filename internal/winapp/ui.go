@@ -67,6 +67,16 @@ const (
 	tvgnCaret     = 9
 	tvifIcon      = 0x0027       // TEXT|IMAGE|SELECTEDIMAGE|PARAM
 	tvnSelChanged = ^uint32(450) // TVN_SELCHANGEDW = -451
+	nmRClick      = ^uint32(4)   // NM_RCLICK = -5
+	tvmHitTest    = 0x1111
+	tpmReturnCmd  = 0x0100
+	tpmRightBtn   = 0x0002
+	mfString      = 0
+	idCtxNote     = 4001
+	idCtxFolder   = 4002
+	idCtxRename   = 4003
+	idCtxSave     = 4004
+	idCtxDelete   = 4005
 	ilcColor32    = 0x20
 	sideW         = int32(260)
 	paneX         = 8 + sideW + 8
@@ -180,6 +190,13 @@ type tcitem struct {
 type tchit struct {
 	x, y  int32
 	flags uint32
+}
+
+type tvhit struct {
+	x, y  int32
+	flags uint32
+	_     uint32
+	hItem uintptr
 }
 
 type toolinfo struct {
@@ -1041,6 +1058,10 @@ func (p *panel) onNotify(lp uintptr) {
 	if hdr.hwndFrom != p.tree {
 		return
 	}
+	if hdr.code == nmRClick {
+		p.treeMenu()
+		return
+	}
 	nm := (*nmtv)(unsafe.Pointer(lp))
 	if nm.hdr.code != tvnSelChanged {
 		return
@@ -1054,6 +1075,69 @@ func (p *panel) onNotify(lp uintptr) {
 	p.selFile = n.file
 	if n.file {
 		p.openPath(n.path)
+	}
+}
+
+func appendMenu(menu uintptr, id uintptr, title string) {
+	u, _ := windows.UTF16PtrFromString(title)
+	pAppendMenu.Call(menu, mfString, id, uintptr(unsafe.Pointer(u)))
+}
+
+func (p *panel) treeHit(sx, sy int32) (tnode, bool) {
+	pt := wpoint{x: sx, y: sy}
+	pScreenToClient.Call(p.tree, uintptr(unsafe.Pointer(&pt)))
+	hit := tvhit{x: pt.x, y: pt.y}
+	send(p.tree, tvmHitTest, 0, uintptr(unsafe.Pointer(&hit)))
+	if hit.hItem == 0 {
+		return tnode{}, false
+	}
+	for _, n := range p.nodes {
+		if n.item == hit.hItem {
+			return n, true
+		}
+	}
+	return tnode{}, false
+}
+
+func (p *panel) treeMenu() {
+	var pt wpoint
+	pGetCursor.Call(uintptr(unsafe.Pointer(&pt)))
+	n, ok := p.treeHit(pt.x, pt.y)
+	if ok {
+		p.selPath = n.path
+		p.selFile = n.file
+		send(p.tree, tvmSelectItem, tvgnCaret, n.item)
+	} else {
+		p.selPath = ""
+		p.selFile = false
+		send(p.tree, tvmSelectItem, tvgnCaret, 0)
+	}
+	menu, _, _ := pCreatePopup.Call()
+	if menu == 0 {
+		return
+	}
+	appendMenu(menu, idCtxNote, "New note")
+	appendMenu(menu, idCtxFolder, "New folder")
+	if ok {
+		appendMenu(menu, idCtxRename, "Rename")
+		if n.file {
+			appendMenu(menu, idCtxSave, "Save")
+		}
+		appendMenu(menu, idCtxDelete, "Delete")
+	}
+	cmd, _, _ := pTrackPopup.Call(menu, tpmReturnCmd|tpmRightBtn, uintptr(pt.x), uintptr(pt.y), 0, p.hwnd, 0)
+	pDestroyMenu.Call(menu)
+	switch cmd {
+	case idCtxNote:
+		p.newNote()
+	case idCtxFolder:
+		p.newFolder()
+	case idCtxRename:
+		p.renameSel()
+	case idCtxSave:
+		p.saveActive()
+	case idCtxDelete:
+		p.deleteSel()
 	}
 }
 
