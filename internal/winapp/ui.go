@@ -83,6 +83,7 @@ const (
 	ttfIdHwnd    = 0x0001
 	ttfSubclass  = 0x0010
 	ttmAddTool   = 0x0432 // TTM_ADDTOOLW
+	ttmSetMaxTip = 0x0418 // TTM_SETMAXTIPWIDTH
 
 	mbYesNoCancel = 0x00000033
 	idYes         = 6
@@ -680,8 +681,9 @@ func openEditor(file string) {
 	p.hwnd = uintptr(frame("Editor", 1100, 720))
 	panels[p.hwnd] = p
 	p.tip = uintptr(create(p.hwnd, "tooltips_class32", "", wsPop|ttsAlways|ttsNoPrefix, 0, 0, 0, 0, 0))
-	note := p.iconBtn(p.hwnd, "New note", "file-plus", 8, 4)
-	folder := p.iconBtn(p.hwnd, "New folder", "folder-plus", 44, 4)
+	send(p.tip, ttmSetMaxTip, 0, 400)
+	note := p.iconBtn(p.hwnd, "New Note", "file-plus", 8, 4)
+	folder := p.iconBtn(p.hwnd, "New Folder", "folder-plus", 44, 4)
 	save := p.iconBtn(p.hwnd, "Save", "device-floppy", 80, 4)
 	p.clicks[note] = p.newNote
 	p.clicks[folder] = p.newFolder
@@ -865,7 +867,8 @@ func (p *panel) addTip(btn uintptr, title string) {
 	if p.tip == 0 {
 		return
 	}
-	u, _ := windows.UTF16FromString(title)
+	// trailing space: tooltip width is often one glyph short, which would clip the last letter
+	u, _ := windows.UTF16FromString(title + " ")
 	p.tipText[btn] = u
 	ti := toolinfo{
 		size:  uint32(unsafe.Sizeof(toolinfo{})),
