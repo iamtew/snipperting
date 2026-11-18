@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -140,6 +141,28 @@ func splitKeep(s string) []string {
 	s = strings.ReplaceAll(s, "\r\n", "\n")
 	s = strings.ReplaceAll(s, "\r", "\n")
 	return strings.Split(s, "\n")
+}
+
+// OrderChildren stable-partitions files vs dirs at every level.
+// dirsFirst true: folders then files (Edit tree). false: files then folders (tray, Bulk Edit).
+func OrderChildren(nodes []Node, dirsFirst bool) {
+	if len(nodes) == 0 {
+		return
+	}
+	sort.SliceStable(nodes, func(i, j int) bool {
+		di := nodes[i].Type == "dir"
+		dj := nodes[j].Type == "dir"
+		if di == dj {
+			return false
+		}
+		if dirsFirst {
+			return di
+		}
+		return !di
+	})
+	for i := range nodes {
+		OrderChildren(nodes[i].Children, dirsFirst)
+	}
 }
 
 func Walk(dataDir string) (Node, error) {

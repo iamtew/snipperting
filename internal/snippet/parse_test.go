@@ -123,3 +123,44 @@ func TestStateSynonyms(t *testing.T) {
 		t.Fatalf("%+v", d.Meta)
 	}
 }
+
+func mixedNodes() []Node {
+	return []Node{
+		{Type: "dir", Name: "z", Children: []Node{
+			{Type: "dir", Name: "inner"},
+			{Type: "file", Name: "c.md"},
+			{Type: "file", Name: "a.md"},
+		}},
+		{Type: "file", Name: "b.md"},
+		{Type: "dir", Name: "m"},
+		{Type: "file", Name: "a.md"},
+	}
+}
+
+func nodeNames(nodes []Node) string {
+	parts := make([]string, len(nodes))
+	for i, n := range nodes {
+		parts[i] = n.Name
+	}
+	return strings.Join(parts, ",")
+}
+
+func TestOrderChildren(t *testing.T) {
+	last := mixedNodes()
+	OrderChildren(last, false)
+	if got := nodeNames(last); got != "b.md,a.md,z,m" {
+		t.Fatalf("dirs last %s", got)
+	}
+	if got := nodeNames(last[2].Children); got != "c.md,a.md,inner" {
+		t.Fatalf("nested dirs last %s", got)
+	}
+
+	first := mixedNodes()
+	OrderChildren(first, true)
+	if got := nodeNames(first); got != "z,m,b.md,a.md" {
+		t.Fatalf("dirs first %s", got)
+	}
+	if got := nodeNames(first[0].Children); got != "inner,c.md,a.md" {
+		t.Fatalf("nested dirs first %s", got)
+	}
+}

@@ -34,6 +34,7 @@ func fillMenu(cfg *config.Store) {
 	dataDir := cfg.Get().DataDir
 	tree, err := snippet.Walk(dataDir)
 	if err == nil {
+		snippet.OrderChildren(tree.Children, false)
 		addNodes(nil, dataDir, tree.Children)
 	}
 	systray.AddSeparator()

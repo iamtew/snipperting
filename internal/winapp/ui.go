@@ -546,6 +546,7 @@ func (p *panel) rebuildPrefs() {
 	}
 	tree, err := snippet.Walk(cur.DataDir)
 	if err == nil && len(tree.Children) > 0 {
+		snippet.OrderChildren(tree.Children, false)
 		p.addBulk(tree.Children, 0)
 	} else {
 		lab := p.static(p.bulk, "No snippets yet. Create notes in Edit.", 0, 0, 400, 24)
@@ -865,6 +866,7 @@ func (p *panel) fillTree() {
 	if err != nil {
 		return
 	}
+	snippet.OrderChildren(tree.Children, true)
 	p.addTree(tviRoot, tree.Children)
 	p.selectTree(keep)
 }
