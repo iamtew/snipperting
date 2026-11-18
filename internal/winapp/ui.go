@@ -728,14 +728,13 @@ func openEditor(file string) {
 	send(p.tip, ttmSetMaxTip, 0, 400)
 	note := p.iconBtn(p.hwnd, "New Note", "file-plus", 8, 4)
 	folder := p.iconBtn(p.hwnd, "New Folder", "folder-plus", 44, 4)
-	del := p.iconBtn(p.hwnd, "Delete", "trash", 80, 4)
+	save := p.iconBtn(p.hwnd, "Save", "device-floppy", 80, 4)
+	del := p.iconBtn(p.hwnd, "Delete", "trash", 116, 4)
 	p.clicks[note] = p.newNote
 	p.clicks[folder] = p.newFolder
+	p.clicks[save] = p.saveActive
 	p.clicks[del] = p.deleteSel
 	x := int32(276)
-	save := p.iconBtn(p.hwnd, "Save", "device-floppy", x, 4)
-	p.clicks[save] = p.saveActive
-	x += 36
 	for _, f := range []struct{ title, icon, kind string }{
 		{"Bold", "bold", "bold"},
 		{"Italic", "italic", "italic"},
